@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workout Tracker</title>
+    <style>:root
+    {
+      --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+      --color-background: #f0f2f5;
+      --color-surface: #ffffff;
+      --color-primary: #005fcc;
+      --color-primary-hover: #004c99;
+      --color-danger: #d92d20;
+      --color-danger-hover: #b32318;
+      --color-text-primary: #111827;
+      --color-text-secondary: #6b7280;
+      --color-border: #d1d5db;
+      --color-input-bg: #f9fafb;
+      --color-focus-ring: #005fcc;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --border-radius: 8px;
+    }
+    @media(prefers-color-scheme: dark){:root {
+      --color-background: #111827;
+      --color-surface: #1f2937;
+      --color-primary: #3b82f6;
+      --color-primary-hover: #2563eb;
+      --color-danger: #f87171;
+      --color-danger-hover: #ef4444;
+      --color-text-primary: #f9fafb;
+      --color-text-secondary: #9ca3af;
+      --color-border: #374151;
+      --color-input-bg: #374151;
+      --color-focus-ring: #3b82f6;
+    }
+  }
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+  html {
+    font-size: 100%;
+  }
+  body {
+    font-family: var(--font-family-sans);
+    background-color: var(--color-background);
+    color: var(--color-text-primary);
+    line-height: 1.5;
+    padding: 1rem;
+  }
+  .container {
+    max-width: 800px;
+    margin-inline: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .header__title {
+    font-size: 2.25rem;
+    text-align: center;
+    color: var(--color-text-primary);
+  }
+  .tabs__list {
+    display: flex;
+    list-style: none;
+    border-bottom: 2px solid var(--color-border);
+  }
+  .tabs__button {
+    display: block;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    background-color: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    cursor: pointer;
+    text-decoration: none;
+    margin-bottom: -2px;
+    transition: color 150ms ease-in-out, border-color 150ms ease-in-out;
+  }
+  .tabs__button[aria-selected="true"] {
+    color: var(--color-primary);
+    border-color: var(--color-primary);
+  }
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+  .panel[hidden] {
+    display: none;
+  }
+  .panel > .card:first-child {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+  .card {
+    background-color: var(--color-surface);
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--color-border);
+  }
+  .card__title-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+  }
+  .card__title {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 0;
+  }
+  .form {
+    display: grid;
+    gap: 1rem;
+  }
+  @media(min-width: 640px) {
+    .form--log {
+      grid-template-columns: 2fr 1fr 1fr;
+      align-items: flex-end;
+    }
+    .form--log-cardio {
+      grid-template-columns: 2fr 1fr;
+    }
+  }
+  .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .form-group[hidden] {
+    display: none;
+  }
+  .form-group--full-width {
+    grid-column: 1 / -1;
+  }
+  .form-group__label {
+    font-weight: 500;
+    color: var(--color-text-primary);
+  }
+  .input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    background-color: var(--color-input-bg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    color: var(--color-text-primary);
+  }
+  .button {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-radius: var(--border-radius);
+    border: none;
+    cursor: pointer;
+    transition: background-color 150ms ease-in-out, color 150ms ease-in-out;
+    text-align: center;
+  }
+  .button--primary {
+    background-color: var(--color-primary);
+    color: #ffffff;
+  }
+  .button--primary:hover {
+    background-color: var(--color-primary-hover);
+  }
+  .button--icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    padding: 0;
+    line-height: 0;
+    color: var(--color-text-secondary);
+    background-color: transparent;
+  }
+  .button--icon:hover {
+    color: var(--color-text-primary);
+  }
+  .button--icon.button--danger:hover {
+    background-color: var(--color-danger);
+    color: #ffffff;
+  }
+  .collapsible-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .collapsible-list details {
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+  }
+  .collapsible-group__summary {
+    padding: 1rem 1.5rem;
+    font-weight: 600;
+    cursor: pointer;
+    background-color: var(--color-surface);
+    list-style: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .collapsible-group__summary::-webkit-details-marker {
+    display: none;
+  }
+  .collapsible-group__summary::after {
+    content: '';
+    display: inline-block;
+    width: 0.5em;
+    height: 0.5em;
+    border-style: solid;
+    border-color: var(--color-text-secondary);
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    transition: transform 0.2s ease-in-out;
+  }
+  details[open] > .collapsible-group__summary::after {
+    transform: rotate(-135deg);
+    margin-top: -0.25em;
+  }
+  .collapsible-group__list {
+    list-style: none;
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    background-color: var(--color-background);
+  }
+  .exercise-list__item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-surface);
+    padding: 0.5rem 0.5rem 0.5rem 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    gap: 1rem;
+  }
+  .exercise-list__item-main {
+    flex-grow: 1;
+  }
+  .exercise-list__edit-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    flex-grow: 1;
+  }
+  .exercise-list__actions {
+    display: flex;
+    gap: 0.25rem;
+    flex-shrink: 0;
+  }
+  .exercise-list__name {
+    font-weight: 600;
+  }
+  .history-list__item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--color-surface);
+    padding: 1rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--border-radius);
+    gap: 0.5rem 1rem;
+  }
+  .history-list__details {
+    display: flex;
+    flex-direction: column;
+  }
+  .history-list__exercise {
+    font-weight: 600;
+  }
+  .history-list__meta {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+  }
+  .history-list__time {
+    color: var(--color-text-secondary);
+    font-size: 0.875rem;
+    text-align: right;
+    flex-shrink: 0;
+  }
+  </style>
+</head>
+<body>
+  <div class="container"><!-- HTML structure is unchanged --></div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // ============================================
+      // APPLICATION STATE AND CONSTANTS
+      // ============================================
+      const STORAGE_KEY = 'workoutTrackerState_v1';
+      const EXERCISE_CATEGORIES = [
+        'Cardio',
+        'Chest',
+        'Back',
+        'Legs',
+        'Shoulders',
+        'Biceps',
+        'Triceps',
+        'Core',
+        'Other'
+      ];
+
+      function getInitialExercises() {
+        return [
+          {
+            id: `ex-${
+              Date.now() + 1
+            }`,
+            name: 'Running',
+            category: 'Cardio'
+          },
+          {
+            id: `ex-${
+              Date.now() + 2
+            }`,
+            name: 'Cycling',
+            category: 'Cardio'
+          },
+          {
+            id: `ex-${
+              Date.now() + 3
+            }`,
+            name: 'Barbell Bench Press',
+            category: 'Chest'
+          },
+          {
+            id: `ex-${
+              Date.now() + 4
+            }`,
+            name: 'Dumbbell Bench Press',
+            category: 'Chest'
+          }, {
+            id: `ex-${
+              Date.now() + 5
+            }`,
+            name: 'Push-ups',
+            category: 'Chest'
+          }, {
+            id: `ex-${
+              Date.now() + 6
+            }`,
+            name: 'Barbell Row',
+            category: 'Back'
+          }, {
+            id: `ex-${
+              Date.now() + 7
+            }`,
+            name: 'Pull-ups',
+            category: 'Back'
+          }, {
+            id: `ex-${
+              Date.now() + 8
+            }`,
+            name: 'Lat Pulldown',
+            category: 'Back'
+          }, {
+            id: `ex-${
+              Date.now() + 9
+            }`,
+            name: 'Deadlift',
+            category: 'Back'
+          }, {
+            id: `ex-${
+              Date.now() + 10
+            }`,
+            name: 'Barbell Squat',
+            category: 'Legs'
+          }, {
+            id: `ex-${
+              Date.now() + 11
+            }`,
+            name: 'Leg Press',
+            category: 'Legs'
+          }, {
+            id: `ex-${
+              Date.now() + 12
+            }`,
+            name: 'Lunges',
+            category: 'Legs'
+          }, {
+            id: `ex-${
+              Date.now() + 13
+            }`,
+            name: 'Overhead Press (Barbell)',
+            category: 'Shoulders'
+          }, {
+            id: `ex-${
+              Date.now() + 14
+            }`,
+            name: 'Lateral Raises',
+            category: 'Shoulders'
+          }, {
+            id: `ex-${
+              Date.now() + 15
+            }`,
+            name: 'Barbell Curl',
+            category: 'Biceps'
+          }, {
+            id: `ex-${
+              Date.now() + 16
+            }`,
+            name: 'Dumbbell Curl',
+            category: 'Biceps'
+          }, {
+            id: `ex-${
+              Date.now() + 17
+            }`,
+            name: 'Tricep Pushdown',
+            category: 'Triceps'
+          }, {
+            id: `ex-${
+              Date.now() + 18
+            }`,
+            name: 'Dips',
+            category: 'Triceps'
+          }, {
+            id: `ex-${
+              Date.now() + 19
+            }`,
+            name: 'Crunches',
+            category: 'Core'
+          }, {
+            id: `ex-${
+              Date.now() + 20
+            }`,
+            name: 'Leg Raises',
+            category: 'Core'
+          }, {
+            id: `ex-${
+              Date.now() + 21
+            }`,
+            name: 'Plank',
+            category: 'Core'
+          },
+        ];
+      }
+
+      const defaultState = {
+        activeTab: 'log',
+        exercises: getInitialExercises(),
+        history: [],
+        logForm: {
+          exerciseId: '',
+          weight: '',
+          reps: '',
+          time: ''
+        },
+        settings: {
+          filter: '',
+          editingExerciseId: null,
+          editingCategory: null
+        }
+      };
+
+      let state = loadState();
+
+      function loadState() {
+        const storedState = localStorage.getItem(STORAGE_KEY);
+        if (storedState) {
+          const parsedState = JSON.parse(storedState);
+          const mergedLogForm = {
+            ... defaultState.logForm,
+            exerciseId: parsedState.logForm ?. exerciseId || ''
+          };
+          return {
+            ... defaultState,
+            ... parsedState,
+            logForm: mergedLogForm,
+            exercises: parsedState.exercises && parsedState.exercises.length > 0 ? parsedState.exercises : defaultState.exercises
+          };
+        }
+        return {
+          ... defaultState
+        };
+      }
+
+      function saveState() {
+        const stateToSave = {
+          exercises: state.exercises,
+          history: state.history,
+          activeTab: state.activeTab,
+          logForm: {
+            exerciseId: state.logForm.exerciseId
+          }
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+      }
+
+      // ============================================
+      // DOM INJECTION & CACHING
+      // ============================================
+      const container = document.querySelector('.container');
+      container.innerHTML = `
+          <header class="header"><h1 class="header__title">Workout Tracker</h1></header>
+          <main>
+            <nav class="tabs" aria-label="Main navigation"><ul class="tabs__list" role="tablist"><li class="tabs__item" role="presentation"><a href="#log-panel" class="tabs__button" role="tab" id="log-tab">Log Workout</a></li><li class="tabs__item" role="presentation"><a href="#settings-panel" class="tabs__button" role="tab" id="settings-tab">Settings</a></li></ul></nav>
+            <section id="log-panel" class="panel" role="tabpanel" aria-labelledby="log-tab">
+              <div class="card"><div class="card__title-container"><h2 class="card__title">Log an Activity</h2></div><form id="log-form" class="form form--log"><div class="form-group"><label for="log-exercise" class="form-group__label">Exercise</label><select id="log-exercise" class="input" name="exerciseId" required></select></div><div class="form-group" id="log-weight-group"><label for="log-weight" class="form-group__label">Weight (kg)</label><input type="number" id="log-weight" class="input" name="weight" min="0" step="0.5" placeholder="20"></div><div class="form-group" id="log-reps-group"><label for="log-reps" class="form-group__label">Reps</label><input type="number" id="log-reps" class="input" name="reps" min="1" step="1" placeholder="10"></div><div class="form-group" id="log-time-group"><label for="log-time" class="form-group__label">Time (minutes)</label><input type="number" id="log-time" class="input" name="time" min="1" step="1" placeholder="30"></div><button type="submit" class="button button--primary form-group--full-width">Log Activity</button></form></div>
+              <div class="card" id="history-card"><div class="card__title-container"><h2 class="card__title" id="history-title">History</h2><button id="clear-history-filter" class="button button--link" hidden>Clear Filter</button></div><div id="history-container" role="feed" aria-busy="false"><div id="history-list" class="collapsible-list"></div><p id="history-empty-state">No activities logged yet. Let's get to work!</p></div></div>
+            </section>
+            <section id="settings-panel" class="panel" role="tabpanel" aria-labelledby="settings-tab">
+              <div class="card"><div class="card__title-container"><h2 class="card__title">Add New Exercise</h2></div><form id="add-exercise-form" class="form"><div class="form-group form-group--full-width"><label for="new-exercise-name" class="form-group__label">Exercise Name</label><input type="text" id="new-exercise-name" class="input" required placeholder="Filter or add new exercise..."></div><div class="form-group form-group--full-width"><label for="new-exercise-category" class="form-group__label">Category</label><select id="new-exercise-category" class="input" required></select></div><button type="submit" class="button button--primary form-group--full-width">Add Exercise</button></form></div>
+              <div class="card"><div class="card__title-container"><h2 class="card__title">Manage Exercises</h2></div><div id="manage-exercise-list" class="collapsible-list"></div><p id="manage-exercise-empty-state" hidden>No exercises match your filter.</p></div>
+            </section>
+          </main>`;
+
+      const getElementById = (id) => document.getElementById(id);
+      const logForm = getElementById('log-form');
+      const logExerciseSelect = getElementById('log-exercise');
+      const logWeightGroup = getElementById('log-weight-group');
+      const logRepsGroup = getElementById('log-reps-group');
+      const logTimeGroup = getElementById('log-time-group');
+      const logWeightInput = getElementById('log-weight');
+      const logRepsInput = getElementById('log-reps');
+      const logTimeInput = getElementById('log-time');
+      const historyContainer = getElementById('history-container');
+      const historyList = getElementById('history-list');
+      const historyTitle = getElementById('history-title');
+      const historyEmptyState = getElementById('history-empty-state');
+      const clearHistoryFilterBtn = getElementById('clear-history-filter');
+      const addExerciseForm = getElementById('add-exercise-form');
+      const newExerciseNameInput = getElementById('new-exercise-name');
+      const newExerciseCategorySelect = getElementById('new-exercise-category');
+      const manageExerciseList = getElementById('manage-exercise-list');
+      const manageExerciseEmptyState = getElementById('manage-exercise-empty-state');
+
+      // ============================================
+      // RENDER FUNCTIONS
+      // ============================================
+      function renderApplication() { /* ... unchanged ... */
+      }
+      function renderTabs() { /* ... unchanged ... */
+      }
+      function updateLogFormVisibility() { /* ... unchanged ... */
+      }
+      function renderHistory() { /* ... unchanged ... */
+      }
+      function renderManageExerciseList() { /* ... unchanged ... */
+      }
+      function createExerciseListItem(exercise) { /* ... unchanged ... */
+      }
+
+      // --- Functions below are identical to the previous step, with one key change ---
+
+      function renderApplication() {
+        historyContainer.setAttribute('aria-busy', 'true');
+        renderTabs();
+        renderLogForm();
+        renderHistory();
+        renderManageExerciseList();
+        historyContainer.setAttribute('aria-busy', 'false');
+      }
+
+      function renderTabs() {
+        document.querySelectorAll('[role="tab"]').forEach(tab => {
+          tab.setAttribute('aria-selected', tab.id === `${
+            state.activeTab
+          }-tab`);
+        });
+        document.querySelectorAll('[role="tabpanel"]').forEach(panel => {
+          panel.hidden = panel.id !== `${
+            state.activeTab
+          }-panel`;
+        });
+      }
+
+      function updateLogFormVisibility() {
+        const selectedExercise = state.exercises.find(ex => ex.id === logExerciseSelect.value);
+        const isCardio = selectedExercise && selectedExercise.category === 'Cardio';
+        logWeightGroup.hidden = isCardio;
+        logRepsGroup.hidden = isCardio;
+        logTimeGroup.hidden = ! isCardio;
+        logWeightInput.disabled = isCardio;
+        logRepsInput.disabled = isCardio;
+        logTimeInput.disabled = ! isCardio;
+        logRepsInput.required = ! isCardio;
+        logTimeInput.required = isCardio;
+        if (isCardio) {
+          logForm.classList.add('form--log-cardio');
+        } else {
+          logForm.classList.remove('form--log-cardio');
+        }
+      }
+
+      function renderLogForm() {
+        logExerciseSelect.innerHTML = '<option value="">Select an exercise...</option>';
+        const exercisesByCategory = state.exercises.reduce((acc, ex) => {
+          (acc[ex.category] = acc[ex.category] || []).push(ex);
+          return acc;
+        }, {});
+
+        // BUG FIX: Get the keys from the generated object and sort them alphabetically
+        const sortedCategories = Object.keys(exercisesByCategory).sort();
+
+        sortedCategories.forEach(category => {
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = category;
+          exercisesByCategory[category].sort((a, b) => a.name.localeCompare(b.name)).forEach(ex => {
+            optgroup.innerHTML += `<option value="${
+              ex.id
+            }">${
+              ex.name
+            }</option>`;
+          });
+          logExerciseSelect.appendChild(optgroup);
+        });
+
+        logExerciseSelect.value = state.logForm.exerciseId;
+        logWeightInput.value = state.logForm.weight;
+        logRepsInput.value = state.logForm.reps;
+        logTimeInput.value = state.logForm.time;
+        updateLogFormVisibility();
+      }
+
+      function renderHistory() {
+        const filterExerciseId = state.logForm.exerciseId;
+        let historyToRender = state.history;
+        if (filterExerciseId) {
+          const filteredExercise = state.exercises.find(ex => ex.id === filterExerciseId);
+          historyTitle.textContent = `History for ${
+            filteredExercise ? filteredExercise.name : 'Unknown'
+          }`;
+          clearHistoryFilterBtn.hidden = false;
+          historyToRender = state.history.filter(item => item.exerciseId === filterExerciseId);
+        } else {
+          historyTitle.textContent = 'History';
+          clearHistoryFilterBtn.hidden = true;
+        } historyList.innerHTML = '';
+        const sortedHistory = [... historyToRender].sort((a, b) => b.timestamp - a.timestamp);
+        if (sortedHistory.length === 0) {
+          historyEmptyState.hidden = false;
+          historyList.hidden = true;
+          historyEmptyState.textContent = filterExerciseId ? 'No activities logged for this exercise yet.' : "No activities logged yet. Let's get to work!";
+        } else {
+          historyEmptyState.hidden = true;
+          historyList.hidden = false;
+          const activitiesByDate = sortedHistory.reduce((acc, activity) => {
+            const date = new Date(activity.timestamp).toLocaleDateString('en-CA');
+            (acc[date] = acc[date] || []).push(activity);
+            return acc;
+          }, {});
+          Object.keys(activitiesByDate).sort((a, b) => new Date(b) - new Date(a)).forEach((dateString, index) => {
+            const activities = activitiesByDate[dateString];
+            const details = document.createElement('details');
+            if (index === 0) 
+              details.open = true;
+            
+            const summary = document.createElement('summary');
+            summary.className = 'collapsible-group__summary';
+            const formattedDate = new Date(dateString).toLocaleDateString(undefined, {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            });
+            summary.textContent = `${formattedDate} (${
+              activities.length
+            } activit${
+              activities.length > 1 ? 'ies' : 'y'
+            })`;
+            const innerList = document.createElement('ul');
+            innerList.className = 'collapsible-group__list';
+            activities.forEach(item => {
+              const exercise = state.exercises.find(ex => ex.id === item.exerciseId);
+              if (! exercise) 
+                return;
+              
+              const metaText = item.hasOwnProperty('time') ? `${
+                item.time
+              } min` : `${
+                item.weight || 0
+              } kg × ${
+                item.reps
+              }`;
+              innerList.innerHTML += `<li class="history-list__item"><div class="history-list__details"><span class="history-list__exercise">${
+                exercise.name
+              }</span><span class="history-list__meta">${metaText}</span></div><span class="history-list__time">${
+                new Date(item.timestamp).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+              }</span></li>`;
+            });
+            details.append(summary, innerList);
+            historyList.appendChild(details);
+          });
+        }
+      }
+
+      function renderManageExerciseList() {
+        newExerciseCategorySelect.innerHTML = EXERCISE_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+        manageExerciseList.innerHTML = '';
+        const filterQuery = state.settings.filter.trim().toLowerCase();
+        let filteredExercises = state.exercises;
+        if (filterQuery) {
+          filteredExercises = state.exercises.filter(ex => ex.name.toLowerCase().includes(filterQuery));
+        }
+        manageExerciseEmptyState.hidden = filteredExercises.length > 0;
+        manageExerciseList.hidden = filteredExercises.length === 0;
+        if (filteredExercises.length > 0) {
+          const exercisesByCategory = filteredExercises.reduce((acc, ex) => {
+            (acc[ex.category] = acc[ex.category] || []).push(ex);
+            return acc;
+          }, {});
+          const sortedCategories = Object.keys(exercisesByCategory).sort();
+          sortedCategories.forEach(category => {
+            const details = document.createElement('details');
+            if (filterQuery || state.settings.editingCategory === category) {
+              details.open = true;
+            }
+            const summary = document.createElement('summary');
+            summary.className = 'collapsible-group__summary';
+            const count = exercisesByCategory[category].length;
+            summary.textContent = `${category} (${count} exercise${
+              count > 1 ? 's' : ''
+            })`;
+            const list = document.createElement('ul');
+            list.className = 'collapsible-group__list';
+            exercisesByCategory[category].sort((a, b) => a.name.localeCompare(b.name)).forEach(ex => {
+              list.appendChild(createExerciseListItem(ex));
+            });
+            details.append(summary, list);
+            manageExerciseList.appendChild(details);
+          });
+        }
+      }
+
+      function createExerciseListItem(exercise) {
+        const listItem = document.createElement('li');
+        listItem.className = 'exercise-list__item';
+        if (state.settings.editingExerciseId === exercise.id) {
+          const categoryOptions = EXERCISE_CATEGORIES.map(
+            cat => `<option value="${cat}" ${
+              cat === exercise.category ? 'selected' : ''
+            }>${cat}</option>`
+          ).join('');
+          listItem.innerHTML = `
+              <div class="exercise-list__edit-fields">
+                <input type="text" class="input" id="edit-exercise-name-${
+            exercise.id
+          }" value="${
+            exercise.name
+          }" required>
+                <select class="input" id="edit-exercise-category-${
+            exercise.id
+          }">${categoryOptions}</select>
+              </div>
+              <div class="exercise-list__actions">
+                <button class="button button--primary" data-exercise-id="${
+            exercise.id
+          }" data-action="save">Save</button>
+                <button class="button" data-exercise-id="${
+            exercise.id
+          }" data-action="cancel">Cancel</button>
+              </div>`;
+        } else {
+          listItem.innerHTML = `
+              <div class="exercise-list__item-main"><span class="exercise-list__name">${
+            exercise.name
+          }</span></div>
+              <div class="exercise-list__actions">
+                <button class="button button--icon" data-exercise-id="${
+            exercise.id
+          }" data-action="edit" aria-label="Edit"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/></svg></button>
+                <button class="button button--icon button--danger" data-exercise-id="${
+            exercise.id
+          }" data-action="delete" aria-label="Delete"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg></button>
+              </div>`;
+        }
+        return listItem;
+      }
+
+      // ============================================
+      // EVENT HANDLERS
+      // ============================================
+      function handleTabClick(event) {
+        const clickedTab = event.target.closest('[role="tab"]');
+        if (! clickedTab) 
+          return;
+        
+        state.activeTab = clickedTab.id.replace('-tab', '');
+        saveState();
+        renderApplication();
+      }
+      function handleLogFormInput(event) {
+        const {name, value, id} = event.target;
+        if (name in state.logForm) {
+          state.logForm[name] = value;
+          if (id === 'log-exercise') {
+            updateLogFormVisibility();
+            saveState();
+            renderHistory();
+          }
+        }
+      }
+      function handleLogFormSubmit(event) {
+        event.preventDefault();
+        const exerciseId = logExerciseSelect.value;
+        if (! exerciseId) {
+          alert('Please select an exercise.');
+          return;
+        }
+        const exercise = state.exercises.find(ex => ex.id === exerciseId);
+        const newActivity = {
+          id: `act-${
+            Date.now()
+          }`,
+          exerciseId,
+          timestamp: Date.now()
+        };
+        if (exercise.category === 'Cardio') {
+          const time = logTimeInput.value;
+          if (! time || time <= 0) {
+            alert('Please enter a valid time.');
+            return;
+          }
+          newActivity.time = parseInt(time, 10);
+        } else {
+          const reps = logRepsInput.value;
+          if (! reps || reps <= 0) {
+            alert('Please enter valid reps.');
+            return;
+          }
+          newActivity.weight = parseFloat(logWeightInput.value || 0);
+          newActivity.reps = parseInt(reps, 10);
+        } state.history.push(newActivity);
+        state.logForm = {
+          ... defaultState.logForm,
+          exerciseId: state.logForm.exerciseId
+        };
+        saveState();
+        renderApplication();
+        if (exercise.category === 'Cardio') 
+          logTimeInput.focus();
+         else 
+          logWeightInput.focus();
+        
+      }
+      function handleAddExerciseFormSubmit(event) {
+        event.preventDefault();
+        const name = newExerciseNameInput.value.trim();
+        const category = newExerciseCategorySelect.value;
+        if (! name || ! category) {
+          alert('Please fill out all fields.');
+          return;
+        }
+        if (state.exercises.some(ex => ex.name.toLowerCase() === name.toLowerCase())) {
+          alert(`Exercise "${name}" already exists.`);
+          return;
+        }
+        state.exercises.push({id: `ex-${
+            Date.now()
+          }`, name, category});
+        addExerciseForm.reset();
+        state.settings.filter = '';
+        saveState();
+        renderApplication();
+      }
+      function handleManageListClick(event) {
+        const button = event.target.closest('button[data-exercise-id]');
+        if (! button) 
+          return;
+        
+        const exerciseId = button.dataset.exerciseId;
+        const action = button.dataset.action;
+        const exercise = state.exercises.find(ex => ex.id === exerciseId);
+        if (action === 'edit') {
+          state.settings.editingExerciseId = exerciseId;
+          state.settings.editingCategory = exercise.category;
+        } else if (action === 'cancel') {
+          state.settings.editingExerciseId = null;
+          state.settings.editingCategory = null;
+        } else if (action === 'save') {
+          const newName = getElementById(`edit-exercise-name-${exerciseId}`).value.trim();
+          const newCategory = getElementById(`edit-exercise-category-${exerciseId}`).value;
+          if (! newName) {
+            alert('Exercise name cannot be empty.');
+            return;
+          }
+          if (state.exercises.some(ex => ex.id !== exerciseId && ex.name.toLowerCase() === newName.toLowerCase())) {
+            alert(`An exercise with the name "${newName}" already exists.`);
+            return;
+          }
+          exercise.name = newName;
+          exercise.category = newCategory;
+          state.settings.editingExerciseId = null;
+          state.settings.editingCategory = newCategory;
+          saveState();
+        } else if (action === 'delete') {
+          if (confirm(`Are you sure you want to delete "${
+            exercise.name
+          }"? This will also remove its history.`)) {
+            state.exercises = state.exercises.filter(ex => ex.id !== exerciseId);
+            state.history = state.history.filter(h => h.exerciseId !== exerciseId);
+            saveState();
+          }
+        }
+        renderApplication();
+      }
+      function handleSettingsFilterInput(event) {
+        state.settings.filter = event.target.value;
+        state.settings.editingCategory = null;
+        renderApplication();
+      }
+      function handleClearFilter() {
+        state.logForm.exerciseId = '';
+        saveState();
+        renderApplication();
+      }
+
+      // ============================================
+      // INITIALIZATION
+      // ============================================
+      function initializeApplication() {
+        document.querySelector('.tabs__list').addEventListener('click', handleTabClick);
+        logForm.addEventListener('submit', handleLogFormSubmit);
+        logForm.addEventListener('input', handleLogFormInput);
+        addExerciseForm.addEventListener('submit', handleAddExerciseFormSubmit);
+        manageExerciseList.addEventListener('click', handleManageListClick);
+        newExerciseNameInput.addEventListener('input', handleSettingsFilterInput);
+        clearHistoryFilterBtn.addEventListener('click', handleClearFilter);
+        window.addEventListener('pageshow', () => renderApplication());
+        renderApplication();
+      }
+
+      initializeApplication();
+    });
+  </script>
+</body></html>
