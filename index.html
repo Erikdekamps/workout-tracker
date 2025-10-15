@@ -293,7 +293,7 @@
   </style>
 </head>
 <body>
-  <div class="container"><!-- HTML structure is unchanged --></div>
+  <div class="container"></div>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
@@ -540,21 +540,6 @@
       // ============================================
       // RENDER FUNCTIONS
       // ============================================
-      function renderApplication() { /* ... unchanged ... */
-      }
-      function renderTabs() { /* ... unchanged ... */
-      }
-      function updateLogFormVisibility() { /* ... unchanged ... */
-      }
-      function renderHistory() { /* ... unchanged ... */
-      }
-      function renderManageExerciseList() { /* ... unchanged ... */
-      }
-      function createExerciseListItem(exercise) { /* ... unchanged ... */
-      }
-
-      // --- Functions below are identical to the previous step, with one key change ---
-
       function renderApplication() {
         historyContainer.setAttribute('aria-busy', 'true');
         renderTabs();
@@ -602,7 +587,7 @@
           return acc;
         }, {});
 
-        // BUG FIX: Get the keys from the generated object and sort them alphabetically
+        // Get the keys from the generated object and sort them alphabetically
         const sortedCategories = Object.keys(exercisesByCategory).sort();
 
         sortedCategories.forEach(category => {
