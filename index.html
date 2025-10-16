@@ -140,16 +140,16 @@
       box-shadow: none;
     }
 
+    .card__title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
     .card__title-container {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 1.5rem;
-    }
-
-    .card__title {
-      font-size: 1.5rem;
-      font-weight: 600;
       margin-bottom: 1.5rem;
     }
 
@@ -222,28 +222,20 @@
       gap: 1rem;
     }
 
-    .form--log.grid-cols-3,
-    .form--log.grid-cols-2 {
+    .form--log.grid-cols-3 {
       display: grid;
       gap: 1rem;
-    }
-
-    .form--log.grid-cols-3 {
       grid-template-columns: 1fr 1fr;
     }
 
     .form--log.grid-cols-2 {
+      display: grid;
+      gap: 1rem;
       grid-template-columns: 1fr;
     }
 
-    .form--log .form-group--with-info {
-      grid-column: 1 / -1;
-    }
-
-    .form--log #exercise-info-panel {
-      grid-column: 1 / -1;
-    }
-
+    .form--log .form-group--with-info,
+    .form--log #exercise-info-panel,
     .form--log .form-group--full-width {
       grid-column: 1 / -1;
     }
@@ -496,7 +488,7 @@
       border: none;
       padding: 0.5rem;
       cursor: pointer;
-      color: var(--color-text);
+      color: var(--color-text-secondary);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -504,7 +496,7 @@
     }
 
     .dropdown__toggle:hover {
-      background-color: var(--color-surface);
+      background-color: var(--color-input-bg);
     }
 
     .dropdown__menu {
@@ -531,19 +523,19 @@
       text-align: left;
       border: none;
       background: none;
-      color: var(--color-text);
+      color: var(--color-text-primary);
       cursor: pointer;
       transition: background-color 0.2s;
       font-size: 0.875rem;
     }
 
     .dropdown__item:hover {
-      background-color: var(--color-surface);
+      background-color: var(--color-input-bg);
     }
 
     .dropdown__item--danger:hover {
-      background-color: #fee;
-      color: #c00;
+      background-color: rgba(217, 45, 32, 0.1);
+      color: var(--color-danger);
     }
 
     .form-group--with-info {
@@ -636,7 +628,7 @@
       background: none;
       border: none;
       cursor: pointer;
-      color: var(--color-text);
+      color: var(--color-text-primary);
       transition: background-color 0.2s ease;
       font-size: 1rem;
       font-weight: 600;
@@ -943,7 +935,7 @@
         _defaults: {
           activeTab: 'log', exercises: [], history: [],
           logForm: { exerciseId: '', weight: '', reps: '', distance: '', duration: '' },
-          settings: { filter: '', editingExerciseId: null, editingCategory: null, keepCategoryOpen: null },
+          settings: { filter: '', editingExerciseId: null, editingCategory: null },
           restTimer: { running: false, paused: false, startTime: 0, remaining: 60, duration: 60, expanded: false }
         },
         _constants: {
@@ -991,10 +983,7 @@
             if (!storedState) {
               return this._getInitialState();
             }
-            let parsedState = JSON.parse(storedState);
-            if (parsedState.exercises && parsedState.exercises.length > 0 && !parsedState.exercises[0].type) {
-              parsedState.exercises = this._migrateExercises(parsedState.exercises);
-            }
+            const parsedState = JSON.parse(storedState);
             const allIds = [
               ...(parsedState.exercises || []).map(item => parseInt(item.id.split('-')[1])),
               ...(parsedState.history || []).map(item => parseInt(item.id.split('-')[1]))
@@ -1003,7 +992,6 @@
             const initialState = this._getInitialState(nextId);
             const mergedState = { ...initialState, ...parsedState };
             
-            // Ensure restTimer has remaining property initialized
             if (mergedState.restTimer && !mergedState.restTimer.hasOwnProperty('remaining')) {
               mergedState.restTimer.remaining = mergedState.restTimer.duration || 60;
             }
@@ -1017,8 +1005,10 @@
 
         save() {
           const stateToSave = {
-            exercises: this._data.exercises, history: this._data.history,
-            activeTab: this._data.activeTab, logForm: { exerciseId: this._data.logForm.exerciseId },
+            exercises: this._data.exercises, 
+            history: this._data.history,
+            activeTab: this._data.activeTab, 
+            logForm: { exerciseId: this._data.logForm.exerciseId },
             restTimer: this._data.restTimer
           };
           localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify(stateToSave));
@@ -1321,23 +1311,20 @@
           return initialState;
         },
 
-        _migrateExercises(exercises) {
-          console.log('Migrating old exercise data to new format...');
-          return exercises.map(ex => ({ ...ex, type: ex.category === 'Cardio' ? this._constants.EXERCISE_TYPES.DISTANCE_TIME.id : this._constants.EXERCISE_TYPES.WEIGHT_REPS.id, notes: ex.notes || '' }));
-        },
-        get() { return this._data; }, getConstants() { return this._constants; },
-        generateId(prefix) { return `${prefix}-${this._data._nextId++}`; }, addExercise(exercise) { this._data.exercises.push(exercise); },
+        get() { return this._data; },
+        getConstants() { return this._constants; },
+        generateId(prefix) { return `${prefix}-${this._data._nextId++}`; },
+        addExercise(exercise) { this._data.exercises.push(exercise); },
         updateExercise(id, updates) {
           const ex = this._data.exercises.find(ex => ex.id === id);
-          if (ex) {
-            Object.assign(ex, updates);
-          }
+          if (ex) Object.assign(ex, updates);
         },
         deleteExercise(id) {
           this._data.exercises = this._data.exercises.filter(ex => ex.id !== id);
           this._data.history = this._data.history.filter(h => h.exerciseId !== id);
         },
-        addHistoryItem(item) { this._data.history.push(item); }, setActiveTab(tabId) { this._data.activeTab = tabId; },
+        addHistoryItem(item) { this._data.history.push(item); },
+        setActiveTab(tabId) { this._data.activeTab = tabId; },
         setLogFormField(field, value) { this._data.logForm[field] = value; },
         resetLogForm() { this._data.logForm = { ...this._defaults.logForm, exerciseId: this._data.logForm.exerciseId }; },
         setFilter(query) { this._data.settings.filter = query; },
@@ -1345,7 +1332,6 @@
           this._data.settings.editingExerciseId = id;
           this._data.settings.editingCategory = category;
         },
-        setKeepCategoryOpen(category) { this._data.settings.keepCategoryOpen = category; },
         setRestTimer(data) { Object.assign(this._data.restTimer, data); },
         getRestTimer() { return this._data.restTimer; }
       };
@@ -1492,6 +1478,7 @@
           const { exercises, history, logForm } = State.get();
           const filterExerciseId = logForm.exerciseId;
           let historyToRender = history;
+          
           if (filterExerciseId) {
             const filteredExercise = exercises.find(ex => ex.id === filterExerciseId);
             DOM.historyTitle.textContent = `History for ${filteredExercise?.name || 'Unknown'}`;
@@ -1502,33 +1489,40 @@
 
           DOM.historyList.innerHTML = '';
           const sortedHistory = [...historyToRender].sort((a, b) => b.timestamp - a.timestamp);
-          DOM.historyEmptyState.hidden = sortedHistory.length > 0;
-          DOM.historyList.hidden = sortedHistory.length === 0;
-          if (sortedHistory.length === 0) {
-            DOM.historyEmptyState.textContent = filterExerciseId ? 'No activities logged for this exercise yet.' : 'No activities logged yet. Let\'s get to work!';
+          const hasHistory = sortedHistory.length > 0;
+          DOM.historyEmptyState.hidden = hasHistory;
+          DOM.historyList.hidden = !hasHistory;
+          
+          if (!hasHistory) {
+            DOM.historyEmptyState.textContent = filterExerciseId 
+              ? 'No activities logged for this exercise yet.' 
+              : 'No activities logged yet. Let\'s get to work!';
             return;
           }
+          
           const activitiesByDate = sortedHistory.reduce((acc, activity) => {
             const date = new Date(activity.timestamp).toLocaleDateString('en-CA');
             (acc[date] = acc[date] || []).push(activity);
             return acc;
           }, {});
+          
           Object.keys(activitiesByDate).sort((a, b) => new Date(b) - new Date(a)).forEach((dateString, index) => {
             const activities = activitiesByDate[dateString];
             const details = document.createElement('details');
-            if (index === 0) {
-              details.open = true;
-            }
+            if (index === 0) details.open = true;
+            
             const summary = document.createElement('summary');
             summary.className = 'collapsible-group__summary';
-            summary.textContent = `${new Date(dateString).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} (${activities.length} activit${activities.length > 1 ? 'ies' : 'y'})`;
+            const activityCount = activities.length;
+            summary.textContent = `${new Date(dateString).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} (${activityCount} activit${activityCount > 1 ? 'ies' : 'y'})`;
+            
             const innerList = document.createElement('ul');
             innerList.className = 'collapsible-group__list';
+            
             activities.forEach(item => {
               const exercise = exercises.find(ex => ex.id === item.exerciseId);
-              if (!exercise) {
-                return;
-              }
+              if (!exercise) return;
+              
               let metaText = '';
               if (item.hasOwnProperty('weight')) {
                 metaText = `${item.weight || 0} kg × ${item.reps} reps`;
@@ -1539,11 +1533,13 @@
               } else if (item.hasOwnProperty('duration')) {
                 metaText = `${item.duration} seconds`;
               }
+              
               const li = document.createElement('li');
               li.className = 'history-list__item';
               li.innerHTML = `<div class="history-list__details"><span class="history-list__exercise">${exercise.name}</span><span class="history-list__meta">${metaText}</span></div><span class="history-list__time">${new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
               innerList.appendChild(li);
             });
+            
             details.append(summary, innerList);
             DOM.historyList.appendChild(details);
           });
@@ -1566,7 +1562,7 @@
             }, {});
             Object.keys(exercisesByCategory).sort().forEach(category => {
               const details = document.createElement('details');
-              if (filterQuery || settings.editingCategory === category || settings.keepCategoryOpen === category) { details.open = true; }
+              if (filterQuery || settings.editingCategory === category) { details.open = true; }
               const summary = document.createElement('summary');
               summary.className = 'collapsible-group__summary';
               summary.textContent = `${category} (${exercisesByCategory[category].length} exercise${exercisesByCategory[category].length > 1 ? 's' : ''})`;
@@ -1739,34 +1735,22 @@
         },
         restoreRestTimerState() {
           const timer = State.getRestTimer();
-          // Restore expanded/collapsed state
-          if (timer.expanded) {
-            DOM.restTimer.classList.remove('collapsed');
-            DOM.restTimer.classList.add('expanded');
-            DOM.restTimerToggle.setAttribute('aria-expanded', 'true');
-          } else {
-            DOM.restTimer.classList.remove('expanded');
-            DOM.restTimer.classList.add('collapsed');
-            DOM.restTimerToggle.setAttribute('aria-expanded', 'false');
-          }
+          const action = timer.expanded ? 'add' : 'remove';
+          DOM.restTimer.classList[action]('expanded');
+          DOM.restTimer.classList[action === 'add' ? 'remove' : 'add']('collapsed');
+          DOM.restTimerToggle.setAttribute('aria-expanded', timer.expanded);
         },
         resumeRestTimerIfRunning() {
           const timer = State.getRestTimer();
           if (timer.running && !timer.paused) {
-            // Calculate how much time has passed since the timer was running
             const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
             const remaining = Math.max(0, timer.remaining - elapsed);
             
             if (remaining > 0) {
-              // Timer is still running, resume it
-              State.setRestTimer({
-                startTime: Date.now(),
-                remaining: remaining
-              });
+              State.setRestTimer({ startTime: Date.now(), remaining });
               DOM.restTimerPause.textContent = 'Pause';
               this.startRestTimerInterval();
             } else {
-              // Timer expired while page was closed
               this.handleRestTimerComplete();
             }
           } else if (timer.paused) {
@@ -1775,110 +1759,67 @@
           this.updateRestTimerDisplay();
         },
         handleRestTimerToggle() {
-          const timer = State.getRestTimer();
-          const isExpanded = DOM.restTimer.classList.contains('expanded');
-          if (isExpanded) {
-            DOM.restTimer.classList.remove('expanded');
-            DOM.restTimer.classList.add('collapsed');
-            DOM.restTimerToggle.setAttribute('aria-expanded', 'false');
-            State.setRestTimer({ expanded: false });
-          } else {
-            DOM.restTimer.classList.remove('collapsed');
-            DOM.restTimer.classList.add('expanded');
-            DOM.restTimerToggle.setAttribute('aria-expanded', 'true');
-            State.setRestTimer({ expanded: true });
-          }
+          const isExpanded = DOM.restTimer.classList.toggle('expanded');
+          DOM.restTimer.classList.toggle('collapsed');
+          DOM.restTimerToggle.setAttribute('aria-expanded', isExpanded);
+          State.setRestTimer({ expanded: isExpanded });
           State.save();
         },
         handleRestTimerDecrease() {
           const timer = State.getRestTimer();
+          const isRunning = timer.running && !timer.paused;
           
-          if (timer.running && !timer.paused) {
-            // Timer is running - subtract 10 seconds from remaining time
+          if (isRunning) {
             const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
             const currentRemaining = Math.max(0, timer.remaining - elapsed);
             const newRemaining = Math.max(0, currentRemaining - 10);
-            
-            State.setRestTimer({ 
-              startTime: Date.now(),
-              remaining: newRemaining
-            });
-            State.save();
-            this.updateRestTimerDisplay();
+            State.setRestTimer({ startTime: Date.now(), remaining: newRemaining });
             UI.announce(`10 seconds removed`);
           } else {
-            // Timer not running - change duration
             const newDuration = Math.max(10, timer.duration - 10);
-            State.setRestTimer({ 
-              duration: newDuration,
-              remaining: newDuration
-            });
-            State.save();
-            this.updateRestTimerDisplay();
+            State.setRestTimer({ duration: newDuration, remaining: newDuration });
             UI.announce(`Rest duration set to ${newDuration} seconds`);
           }
+          State.save();
+          this.updateRestTimerDisplay();
         },
         handleRestTimerIncrease() {
           const timer = State.getRestTimer();
+          const isRunning = timer.running && !timer.paused;
           
-          if (timer.running && !timer.paused) {
-            // Timer is running - add 10 seconds to remaining time
+          if (isRunning) {
             const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
             const currentRemaining = Math.max(0, timer.remaining - elapsed);
             const newRemaining = Math.min(600, currentRemaining + 10);
-            
-            State.setRestTimer({ 
-              startTime: Date.now(),
-              remaining: newRemaining
-            });
-            State.save();
-            this.updateRestTimerDisplay();
+            State.setRestTimer({ startTime: Date.now(), remaining: newRemaining });
             UI.announce(`10 seconds added`);
           } else {
-            // Timer not running - change duration
             const newDuration = Math.min(600, timer.duration + 10);
-            State.setRestTimer({ 
-              duration: newDuration,
-              remaining: newDuration
-            });
-            State.save();
-            this.updateRestTimerDisplay();
+            State.setRestTimer({ duration: newDuration, remaining: newDuration });
             UI.announce(`Rest duration set to ${newDuration} seconds`);
           }
+          State.save();
+          this.updateRestTimerDisplay();
         },
         handleRestTimerPause() {
           const timer = State.getRestTimer();
           if (!timer.running) {
-            // Start timer
             const startingRemaining = timer.remaining || timer.duration;
-            State.setRestTimer({
-              running: true,
-              paused: false,
-              startTime: Date.now(),
-              remaining: startingRemaining
-            });
+            State.setRestTimer({ running: true, paused: false, startTime: Date.now(), remaining: startingRemaining });
             DOM.restTimerPause.textContent = 'Pause';
             State.save();
             this.startRestTimerInterval();
             UI.announce('Timer started');
           } else if (timer.paused) {
-            // Resume
-            State.setRestTimer({
-              paused: false,
-              startTime: Date.now()
-            });
+            State.setRestTimer({ paused: false, startTime: Date.now() });
             DOM.restTimerPause.textContent = 'Pause';
             State.save();
             this.startRestTimerInterval();
             UI.announce('Timer resumed');
           } else {
-            // Pause
             const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
             const remaining = Math.max(0, timer.remaining - elapsed);
-            State.setRestTimer({
-              paused: true,
-              remaining: remaining
-            });
+            State.setRestTimer({ paused: true, remaining });
             DOM.restTimerPause.textContent = 'Resume';
             State.save();
             if (this.restTimerInterval) {
@@ -1890,11 +1831,7 @@
         },
         handleRestTimerReset() {
           const timer = State.getRestTimer();
-          State.setRestTimer({
-            running: false,
-            paused: false,
-            remaining: timer.duration
-          });
+          State.setRestTimer({ running: false, paused: false, remaining: timer.duration });
           DOM.restTimerPause.textContent = 'Start';
           DOM.restTimerDisplay.classList.remove('warning', 'complete');
           if (this.restTimerInterval) {
@@ -1908,29 +1845,21 @@
           if (this.restTimerInterval) {
             clearInterval(this.restTimerInterval);
           }
-          // Update immediately
           this.updateRestTimerDisplay();
-          // Then update every 100ms for smooth countdown
-          this.restTimerInterval = setInterval(() => {
-            this.updateRestTimerDisplay();
-          }, 100);
+          this.restTimerInterval = setInterval(() => this.updateRestTimerDisplay(), 100);
         },
         updateRestTimerDisplay() {
           const timer = State.getRestTimer();
           
           let remainingSeconds;
           if (!timer.running) {
-            // Show the set duration when not running
             remainingSeconds = timer.remaining || timer.duration;
           } else if (timer.paused) {
-            // Show paused remaining time
             remainingSeconds = timer.remaining;
           } else {
-            // Calculate countdown - actively running
             const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
             remainingSeconds = Math.max(0, timer.remaining - elapsed);
             
-            // Check if timer is complete
             if (remainingSeconds <= 0) {
               this.handleRestTimerComplete();
               return;
@@ -1944,7 +1873,6 @@
           DOM.restTimerDisplay.textContent = timeString;
           DOM.restTimerToggleDisplay.textContent = timeString;
           
-          // Visual feedback
           DOM.restTimerDisplay.classList.remove('warning', 'complete');
           if (timer.running && !timer.paused) {
             if (remainingSeconds === 0) {
@@ -1955,11 +1883,7 @@
           }
         },
         handleRestTimerComplete() {
-          State.setRestTimer({
-            running: false,
-            paused: false,
-            remaining: 0
-          });
+          State.setRestTimer({ running: false, paused: false, remaining: 0 });
           DOM.restTimerPause.textContent = 'Start';
           DOM.restTimerDisplay.classList.add('complete');
           if (this.restTimerInterval) {
@@ -1968,15 +1892,12 @@
           this.updateRestTimerDisplay();
           UI.announce('Rest time complete!');
           
-          // Visual/audio feedback
           if ('vibrate' in navigator) {
             navigator.vibrate([200, 100, 200]);
           }
           
-          // Auto-reset after 2 seconds
           setTimeout(() => {
-            const timer = State.getRestTimer();
-            if (!timer.running) {
+            if (!State.getRestTimer().running) {
               this.handleRestTimerReset();
             }
           }, 2000);
@@ -2002,7 +1923,7 @@
           const { exercises, logForm } = State.get();
           const selectedExercise = exercises.find(ex => ex.id === logForm.exerciseId);
           
-          if (selectedExercise && selectedExercise.notes) {
+          if (selectedExercise?.notes) {
             DOM.exerciseInfoToggle.style.display = 'inline-flex';
             DOM.exerciseInfoPanel.innerHTML = `<strong>${selectedExercise.name}</strong>${selectedExercise.notes}`;
           } else {
@@ -2073,55 +1994,52 @@
         },
         handleManageListClick(event) {
           const button = event.target.closest('button[data-action]');
-          if (!button) {
-            return;
-          }
+          if (!button) return;
+          
           const { action, exerciseId } = button.dataset;
           const exercise = State.get().exercises.find(ex => ex.id === exerciseId);
-          const actionHandlers = {
-            edit: () => {
-              State.setEditingExercise(exerciseId, exercise.category);
-              UI.renderManageExerciseList();
-            },
-            cancel: () => {
-              State.setKeepCategoryOpen(exercise.category);
-              State.setEditingExercise(null, null);
-              UI.renderManageExerciseList();
-            },
-            save: () => {
-              const newName = DOM.manageExerciseList.querySelector(`#edit-exercise-name-${exerciseId}`).value.trim();
-              const newCategory = DOM.manageExerciseList.querySelector(`#edit-exercise-category-${exerciseId}`).value;
-              if (!newName || State.get().exercises.some(ex => ex.id !== exerciseId && ex.name.toLowerCase() === newName.toLowerCase())) {
-                UI.showDialog({ title: 'Invalid Name', message: 'Exercise name cannot be empty or a duplicate.', confirmText: 'OK', showCancel: false });
-                return;
-              }
-              State.updateExercise(exerciseId, { name: newName, category: newCategory, type: DOM.manageExerciseList.querySelector(`#edit-exercise-type-${exerciseId}`).value, notes: DOM.manageExerciseList.querySelector(`#edit-exercise-notes-${exerciseId}`).value.trim() });
-              State.setKeepCategoryOpen(newCategory);
-              State.setEditingExercise(null, null);
-              State.save();
-              UI.renderManageExerciseList();
-              UI.announce(`${newName} saved successfully.`);
-            },
-            delete: () => {
-              UI.showDialog({ title: `Delete ${exercise.name}?`, message: 'This will also remove its history. This action cannot be undone.', confirmText: 'Delete' })
-                .then(confirmed => {
-                  if (confirmed) {
-                    State.deleteExercise(exerciseId);
-                    State.save();
-                    UI.render();
-                    UI.announce(`${exercise.name} deleted.`);
-                  }
-                });
+          
+          if (action === 'edit') {
+            State.setEditingExercise(exerciseId, exercise.category);
+            UI.renderManageExerciseList();
+          } else if (action === 'cancel') {
+            State.setEditingExercise(null, exercise.category);
+            UI.renderManageExerciseList();
+          } else if (action === 'save') {
+            const newName = DOM.manageExerciseList.querySelector(`#edit-exercise-name-${exerciseId}`).value.trim();
+            const newCategory = DOM.manageExerciseList.querySelector(`#edit-exercise-category-${exerciseId}`).value;
+            if (!newName || State.get().exercises.some(ex => ex.id !== exerciseId && ex.name.toLowerCase() === newName.toLowerCase())) {
+              UI.showDialog({ title: 'Invalid Name', message: 'Exercise name cannot be empty or a duplicate.', confirmText: 'OK', showCancel: false });
+              return;
             }
-          };
-          if (actionHandlers[action]) {
-            actionHandlers[action]();
+            State.updateExercise(exerciseId, { 
+              name: newName, 
+              category: newCategory, 
+              type: DOM.manageExerciseList.querySelector(`#edit-exercise-type-${exerciseId}`).value, 
+              notes: DOM.manageExerciseList.querySelector(`#edit-exercise-notes-${exerciseId}`).value.trim() 
+            });
+            State.setEditingExercise(null, newCategory);
+            State.save();
+            UI.renderManageExerciseList();
+            UI.announce(`${newName} saved successfully.`);
+          } else if (action === 'delete') {
+            UI.showDialog({ 
+              title: `Delete ${exercise.name}?`, 
+              message: 'This will also remove its history. This action cannot be undone.', 
+              confirmText: 'Delete' 
+            }).then(confirmed => {
+              if (confirmed) {
+                State.deleteExercise(exerciseId);
+                State.save();
+                UI.render();
+                UI.announce(`${exercise.name} deleted.`);
+              }
+            });
           }
         },
         handleSettingsFilterInput(event) {
           State.setFilter(event.target.value);
           State.setEditingExercise(null, null);
-          State.setKeepCategoryOpen(null); // <-- CORRECT: Reset temporary state on new filter action
           UI.renderManageExerciseList();
         },
         handleMenuToggle(event) {
@@ -2146,14 +2064,13 @@
             confirmText: 'Reset'
           }).then(confirmed => {
             if (confirmed) {
-              // Clear exercises and history
-              State.get().exercises = [];
-              State.get().history = [];
+              const state = State.get();
+              state.exercises = [];
+              state.history = [];
               
-              // Reload the initial state to get default exercises
               const initialState = State._getInitialState(1);
-              State.get().exercises = initialState.exercises;
-              State.get()._nextId = initialState._nextId;
+              state.exercises = initialState.exercises;
+              state._nextId = initialState._nextId;
               
               State.save();
               UI.render();
