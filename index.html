@@ -494,40 +494,56 @@
     }
 
     .rest-timer {
-      position: fixed;
-      bottom: 1rem;
-      right: 1rem;
+      position: relative;
+      width: 100%;
+      max-width: 100%;
       background-color: var(--color-surface);
-      border: 2px solid var(--color-primary);
-      border-radius: var(--border-radius);
-      box-shadow: var(--shadow-md);
-      z-index: 1000;
+      border: 1px solid var(--color-border);
+      box-shadow: none;
       overflow: hidden;
       transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-sizing: border-box;
     }
 
     .rest-timer.collapsed {
-      width: 60px;
-      height: 60px;
-      cursor: pointer;
+      padding: 0;
+    }
+
+    .rest-timer.collapsed .rest-timer__toggle {
+      padding: 1rem 1.5rem;
     }
 
     .rest-timer.expanded {
-      width: 250px;
-      padding: 1rem;
+      padding: 0;
+    }
+
+    .rest-timer.expanded .rest-timer__toggle {
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--color-border);
     }
 
     .rest-timer__toggle {
       display: flex;
       align-items: center;
-      justify-content: center;
-      width: 60px;
-      height: 60px;
+      justify-content: space-between;
+      width: 100%;
       background: none;
       border: none;
       cursor: pointer;
-      color: var(--color-primary);
-      transition: transform 0.3s ease;
+      color: var(--color-text);
+      transition: background-color 0.2s ease;
+      font-size: 1rem;
+      font-weight: 600;
+      text-align: left;
+      box-sizing: border-box;
+    }
+
+    .rest-timer__toggle:hover {
+      background-color: var(--color-background);
+    }
+
+    .rest-timer__toggle::before {
+      content: 'Rest Timer';
     }
 
     .rest-timer.collapsed .rest-timer__content {
@@ -552,18 +568,11 @@
       }
     }
 
-    .rest-timer.expanded .rest-timer__toggle {
-      position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
-      width: 32px;
-      height: 32px;
-    }
-
     .rest-timer__toggle svg {
       transition: transform 0.3s ease;
-      width: 24px;
-      height: 24px;
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
     }
 
     .rest-timer.collapsed .rest-timer__toggle svg {
@@ -575,7 +584,7 @@
     }
 
     .rest-timer__content {
-      padding-top: 2rem;
+      padding: 1.5rem;
       transition: opacity 0.3s ease;
     }
 
@@ -675,26 +684,22 @@
     }
 
     @media (max-width: 640px) {
-      .rest-timer.collapsed {
-        width: 50px;
-        height: 50px;
+      .rest-timer.collapsed .rest-timer__toggle {
+        padding: 0.875rem 1rem;
+        font-size: 0.9375rem;
       }
 
-      .rest-timer__toggle {
-        width: 50px;
-        height: 50px;
+      .rest-timer.expanded .rest-timer__toggle {
+        padding: 0.875rem 1rem;
+      }
+
+      .rest-timer.expanded .rest-timer__content {
+        padding: 1rem;
       }
 
       .rest-timer__toggle svg {
-        width: 20px;
-        height: 20px;
-      }
-
-      .rest-timer.expanded {
-        bottom: 0.5rem;
-        right: 0.5rem;
-        left: 0.5rem;
-        width: auto;
+        width: 18px;
+        height: 18px;
       }
     }
   </style>
@@ -748,6 +753,27 @@
             <button type="submit" class="button button--primary form-group--full-width">Log Activity</button>
           </form>
         </div>
+
+        <!-- Rest Timer -->
+        <div id="rest-timer" class="rest-timer collapsed">
+          <button class="rest-timer__toggle" id="rest-timer-toggle" aria-label="Toggle rest timer" aria-expanded="false">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+              <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/>
+            </svg>
+          </button>
+          <div class="rest-timer__content">
+            <div class="rest-timer__display-container">
+              <button id="rest-timer-decrease" class="button button--secondary rest-timer__adjust-btn" aria-label="Decrease time by 10 seconds">−</button>
+              <div class="rest-timer__display" id="rest-timer-display">1:00</div>
+              <button id="rest-timer-increase" class="button button--secondary rest-timer__adjust-btn" aria-label="Increase time by 10 seconds">+</button>
+            </div>
+            <div class="rest-timer__controls">
+              <button id="rest-timer-pause" class="button button--secondary">Start</button>
+              <button id="rest-timer-reset" class="button button--secondary">Reset</button>
+            </div>
+          </div>
+        </div>
+
         <div class="card" id="history-card">
           <div class="card__title-container">
             <h2 class="card__title" id="history-title">History</h2>
@@ -797,6 +823,7 @@
           <p id="manage-exercise-empty-state" hidden>No exercises match your filter.</p>
         </div>
       </section>
+
     </main>
   </div>
   <dialog id="confirmation-dialog" class="dialog">
@@ -807,25 +834,6 @@
       <button class="button button--danger" id="dialog-confirm-btn">Confirm</button>
     </div>
   </dialog>
-
-  <div id="rest-timer" class="rest-timer collapsed">
-    <button class="rest-timer__toggle" id="rest-timer-toggle" aria-label="Toggle rest timer" aria-expanded="false">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
-        <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/>
-      </svg>
-    </button>
-    <div class="rest-timer__content">
-      <div class="rest-timer__display-container">
-        <button id="rest-timer-decrease" class="button button--secondary rest-timer__adjust-btn" aria-label="Decrease time by 10 seconds">−</button>
-        <div class="rest-timer__display" id="rest-timer-display">1:00</div>
-        <button id="rest-timer-increase" class="button button--secondary rest-timer__adjust-btn" aria-label="Increase time by 10 seconds">+</button>
-      </div>
-      <div class="rest-timer__controls">
-        <button id="rest-timer-pause" class="button button--secondary">Start</button>
-        <button id="rest-timer-reset" class="button button--secondary">Reset</button>
-      </div>
-    </div>
-  </div>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
