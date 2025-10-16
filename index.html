@@ -1143,21 +1143,37 @@
             });
             return select;
           };
+          
+          const createFormGroup = (labelText, inputElement) => {
+            const group = document.createElement('div');
+            group.className = 'form-group';
+            const label = document.createElement('label');
+            label.className = 'form-group__label';
+            label.textContent = labelText;
+            label.setAttribute('for', inputElement.id);
+            group.append(label, inputElement);
+            return group;
+          };
+          
           const fieldsDiv = document.createElement('div');
           fieldsDiv.className = 'exercise-list__edit-fields';
+          
           const nameInput = document.createElement('input');
           nameInput.type = 'text';
           nameInput.className = 'input';
           nameInput.required = true;
           nameInput.id = `edit-exercise-name-${exercise.id}`;
           nameInput.value = exercise.name;
+          
           const categorySelect = createSelect(`edit-exercise-category-${exercise.id}`, EXERCISE_CATEGORIES.map(c => ({ value: c, label: c })), exercise.category);
           const typeSelect = createSelect(`edit-exercise-type-${exercise.id}`, Object.values(EXERCISE_TYPES).map(t => ({ value: t.id, label: t.label })), exercise.type);
+          
           const notesTextarea = document.createElement('textarea');
           notesTextarea.className = 'input';
           notesTextarea.placeholder = 'Notes...';
           notesTextarea.id = `edit-exercise-notes-${exercise.id}`;
           notesTextarea.textContent = exercise.notes || '';
+          
           const actionsDiv = document.createElement('div');
           actionsDiv.className = 'exercise-list__actions';
           actionsDiv.style.justifyContent = 'flex-end';
@@ -1165,7 +1181,15 @@
           const cancelButton = this._createTextButton({ text: 'Cancel', action: 'cancel', exerciseId: exercise.id, classList: ['button--secondary'] });
           const saveButton = this._createTextButton({ text: 'Save', action: 'save', exerciseId: exercise.id, classList: ['button--primary'] });
           actionsDiv.append(cancelButton, saveButton);
-          fieldsDiv.append(nameInput, categorySelect, typeSelect, notesTextarea, actionsDiv);
+          
+          fieldsDiv.append(
+            createFormGroup('Exercise Name', nameInput),
+            createFormGroup('Category', categorySelect),
+            createFormGroup('Exercise Type', typeSelect),
+            createFormGroup('Notes (Optional)', notesTextarea),
+            actionsDiv
+          );
+          
           return fieldsDiv;
         },
         _createIconButton({ action, exerciseId, label, svgPath, extraClass = '' }) {
