@@ -1,14 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Workout Tracker</title>
-    <style>:root
-    {
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Workout Tracker</title>
+  <style>
+    /* --- CSS Variables & Theming --- */
+    :root {
       --font-family-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
       --color-background: #f0f2f5;
-      --color-surface: #ffffff;
+      --color-surface: #fff;
       --color-primary: #005fcc;
       --color-primary-hover: #004c99;
       --color-danger: #d92d20;
@@ -18,620 +20,782 @@
       --color-border: #d1d5db;
       --color-input-bg: #f9fafb;
       --color-focus-ring: #005fcc;
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --color-dialog-backdrop: rgba(0, 0, 0, 0.5);
       --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
       --border-radius: 8px;
     }
-    @media(prefers-color-scheme: dark){:root {
-      --color-background: #111827;
-      --color-surface: #1f2937;
-      --color-primary: #3b82f6;
-      --color-primary-hover: #2563eb;
-      --color-danger: #f87171;
-      --color-danger-hover: #ef4444;
-      --color-text-primary: #f9fafb;
-      --color-text-secondary: #9ca3af;
-      --color-border: #374151;
-      --color-input-bg: #374151;
-      --color-focus-ring: #3b82f6;
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --color-background: #111827;
+        --color-surface: #1f2937;
+        --color-primary: #3b82f6;
+        --color-primary-hover: #2563eb;
+        --color-danger: #f87171;
+        --color-danger-hover: #ef4444;
+        --color-text-primary: #f9fafb;
+        --color-text-secondary: #9ca3af;
+        --color-border: #374151;
+        --color-input-bg: #374151;
+        --color-focus-ring: #3b82f6;
+        --color-dialog-backdrop: rgba(0, 0, 0, 0.7);
+      }
     }
-  }
-  *,
-  *::before,
-  *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
-  html {
-    font-size: 100%;
-  }
-  body {
-    font-family: var(--font-family-sans);
-    background-color: var(--color-background);
-    color: var(--color-text-primary);
-    line-height: 1.5;
-    padding: 1rem;
-  }
-  .container {
-    max-width: 800px;
-    margin-inline: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-  .header__title {
-    font-size: 2.25rem;
-    text-align: center;
-    color: var(--color-text-primary);
-  }
-  .tabs__list {
-    display: flex;
-    list-style: none;
-    border-bottom: 2px solid var(--color-border);
-  }
-  .tabs__button {
-    display: block;
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--color-text-secondary);
-    background-color: transparent;
-    border: none;
-    border-bottom: 3px solid transparent;
-    cursor: pointer;
-    text-decoration: none;
-    margin-bottom: -2px;
-    transition: color 150ms ease-in-out, border-color 150ms ease-in-out;
-  }
-  .tabs__button[aria-selected="true"] {
-    color: var(--color-primary);
-    border-color: var(--color-primary);
-  }
-  .panel {
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-  .panel[hidden] {
-    display: none;
-  }
-  .panel > .card:first-child {
-    border-top-left-radius: 0;
-    border-top-right-radius: 0;
-  }
-  .card {
-    background-color: var(--color-surface);
-    border-radius: var(--border-radius);
-    padding: 1.5rem;
-    box-shadow: var(--shadow-sm);
-    border: 1px solid var(--color-border);
-  }
-  .card__title-container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1.5rem;
-  }
-  .card__title {
-    font-size: 1.5rem;
-    font-weight: 600;
-    margin-bottom: 0;
-  }
-  .form {
-    display: grid;
-    gap: 1rem;
-  }
-  @media(min-width: 640px) {
-    .form--log {
-      grid-template-columns: 2fr 1fr 1fr;
-      align-items: flex-end;
+
+    /* --- Global Styles & Resets --- */
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
     }
-    .form--log-cardio {
-      grid-template-columns: 2fr 1fr;
+
+    html {
+      font-size: 100%;
     }
-  }
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-  .form-group[hidden] {
-    display: none;
-  }
-  .form-group--full-width {
-    grid-column: 1 / -1;
-  }
-  .form-group__label {
-    font-weight: 500;
-    color: var(--color-text-primary);
-  }
-  .input {
-    width: 100%;
-    padding: 0.75rem 1rem;
-    font-size: 1rem;
-    background-color: var(--color-input-bg);
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    color: var(--color-text-primary);
-  }
-  .button {
-    padding: 0.75rem 1.5rem;
-    font-size: 1rem;
-    font-weight: 600;
-    border-radius: var(--border-radius);
-    border: none;
-    cursor: pointer;
-    transition: background-color 150ms ease-in-out, color 150ms ease-in-out;
-    text-align: center;
-  }
-  .button--primary {
-    background-color: var(--color-primary);
-    color: #ffffff;
-  }
-  .button--primary:hover {
-    background-color: var(--color-primary-hover);
-  }
-  .button--icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 2.25rem;
-    height: 2.25rem;
-    padding: 0;
-    line-height: 0;
-    color: var(--color-text-secondary);
-    background-color: transparent;
-  }
-  .button--icon:hover {
-    color: var(--color-text-primary);
-  }
-  .button--icon.button--danger:hover {
-    background-color: var(--color-danger);
-    color: #ffffff;
-  }
-  .collapsible-list {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-  }
-  .collapsible-list details {
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    overflow: hidden;
-  }
-  .collapsible-group__summary {
-    padding: 1rem 1.5rem;
-    font-weight: 600;
-    cursor: pointer;
-    background-color: var(--color-surface);
-    list-style: none;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-  .collapsible-group__summary::-webkit-details-marker {
-    display: none;
-  }
-  .collapsible-group__summary::after {
-    content: '';
-    display: inline-block;
-    width: 0.5em;
-    height: 0.5em;
-    border-style: solid;
-    border-color: var(--color-text-secondary);
-    border-width: 0 2px 2px 0;
-    transform: rotate(45deg);
-    transition: transform 0.2s ease-in-out;
-  }
-  details[open] > .collapsible-group__summary::after {
-    transform: rotate(-135deg);
-    margin-top: -0.25em;
-  }
-  .collapsible-group__list {
-    list-style: none;
-    padding: 1rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    background-color: var(--color-background);
-  }
-  .exercise-list__item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: var(--color-surface);
-    padding: 0.5rem 0.5rem 0.5rem 1rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    gap: 1rem;
-  }
-  .exercise-list__item-main {
-    flex-grow: 1;
-  }
-  .exercise-list__edit-fields {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    flex-grow: 1;
-  }
-  .exercise-list__actions {
-    display: flex;
-    gap: 0.25rem;
-    flex-shrink: 0;
-  }
-  .exercise-list__name {
-    font-weight: 600;
-  }
-  .history-list__item {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background-color: var(--color-surface);
-    padding: 1rem;
-    border: 1px solid var(--color-border);
-    border-radius: var(--border-radius);
-    gap: 0.5rem 1rem;
-  }
-  .history-list__details {
-    display: flex;
-    flex-direction: column;
-  }
-  .history-list__exercise {
-    font-weight: 600;
-  }
-  .history-list__meta {
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-  }
-  .history-list__time {
-    color: var(--color-text-secondary);
-    font-size: 0.875rem;
-    text-align: right;
-    flex-shrink: 0;
-  }
+
+    body {
+      font-family: var(--font-family-sans);
+      background-color: var(--color-background);
+      color: var(--color-text-primary);
+      line-height: 1.5;
+      padding: 1rem;
+    }
+
+    /* --- Accessibility & Utilities --- */
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    *:focus-visible {
+      outline: 2px solid var(--color-focus-ring);
+      outline-offset: 2px;
+      border-radius: 4px;
+    }
+
+    /* --- Layout --- */
+    .container {
+      max-width: 800px;
+      margin-inline: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* --- Components --- */
+    .header__title {
+      font-size: 2.25rem;
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .tabs__list {
+      display: flex;
+      list-style: none;
+      border-bottom: 2px solid var(--color-border);
+    }
+
+    .tabs__button {
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      background: transparent;
+      border: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+      margin-bottom: -2px;
+      transition: color 150ms ease, border-color 150ms ease;
+    }
+
+    .tabs__button[aria-selected="true"] {
+      color: var(--color-primary);
+      border-color: var(--color-primary);
+    }
+
+    .panel {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    .panel[hidden] {
+      display: none;
+    }
+
+    .card {
+      background-color: var(--color-surface);
+      padding: 1.5rem;
+      border: 1px solid var(--color-border);
+      border-radius: 0 0 var(--border-radius) var(--border-radius);
+      box-shadow: none;
+    }
+
+    .card__title-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .card__title {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+    }
+
+    .card__title-container .card__title {
+      margin-bottom: 0;
+    }
+
+    .button {
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      border-radius: var(--border-radius);
+      border: none;
+      cursor: pointer;
+      transition: background-color 150ms ease;
+      text-align: center;
+      line-height: 1;
+    }
+
+    .button--primary {
+      background-color: var(--color-primary);
+      color: #fff;
+    }
+
+    .button--primary:hover {
+      background-color: var(--color-primary-hover);
+    }
+
+    .button--danger {
+      background-color: var(--color-danger);
+      color: #fff;
+    }
+
+    .button--danger:hover {
+      background-color: var(--color-danger-hover);
+    }
+
+    .button--secondary {
+      background: transparent;
+      color: var(--color-text-primary);
+      border: 1px solid var(--color-border);
+    }
+
+    .button--secondary:hover {
+      background-color: var(--color-input-bg);
+    }
+
+    .button--link {
+      background: none;
+      border: none;
+      color: var(--color-primary);
+      text-decoration: underline;
+      padding: 0;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+
+    .button--link:hover {
+      color: var(--color-primary-hover);
+    }
+
+    .button--icon {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.25rem;
+      height: 2.25rem;
+      padding: 0;
+      line-height: 0;
+      color: var(--color-text-secondary);
+      background: transparent;
+    }
+
+    .button--icon:hover {
+      color: var(--color-text-primary);
+    }
+
+    .button--icon.button--danger-hover:hover {
+      background-color: rgba(217, 45, 32, 0.1);
+      color: var(--color-danger);
+    }
+
+    .form {
+      display: grid;
+      gap: 1rem;
+    }
+
+    @media (min-width: 640px) {
+      .form--log.grid-cols-3 {
+        grid-template-columns: 2fr 1fr 1fr;
+      }
+
+      .form--log.grid-cols-2 {
+        grid-template-columns: 2fr 1fr;
+      }
+
+      .form--log.grid-cols-1 {
+        grid-template-columns: 2fr;
+      }
+
+      .form--log {
+        align-items: flex-end;
+      }
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group[hidden] {
+      display: none;
+    }
+
+    .form-group--full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-group__label {
+      font-weight: 500;
+    }
+
+    .input,
+    textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      font-family: inherit;
+      background-color: var(--color-input-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius);
+      color: var(--color-text-primary);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .collapsible-list {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .collapsible-list details {
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius);
+      overflow: hidden;
+    }
+
+    .collapsible-group__summary {
+      padding: 1rem 1.5rem;
+      font-weight: 600;
+      cursor: pointer;
+      background-color: var(--color-surface);
+      list-style: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .collapsible-group__summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .collapsible-group__summary::after {
+      content: '';
+      display: inline-block;
+      width: 0.5em;
+      height: 0.5em;
+      border-style: solid;
+      border-color: currentColor;
+      border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+      transition: transform 0.2s ease-in-out;
+    }
+
+    details[open]>.collapsible-group__summary::after {
+      transform: rotate(-135deg) translateY(0.25em);
+    }
+
+    details[open]>.collapsible-group__summary {
+      border-bottom: 1px solid var(--color-border);
+      border-bottom-left-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+
+    .collapsible-group__list {
+      list-style: none;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      background-color: var(--color-background);
+    }
+
+    .exercise-list__item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: var(--color-surface);
+      padding: 0.5rem 0.5rem 0.5rem 1rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius);
+      gap: 1rem;
+    }
+
+    .exercise-list__item-main {
+      flex-grow: 1;
+    }
+
+    .exercise-list__edit-fields {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      flex-grow: 1;
+      width: 100%;
+    }
+
+    .exercise-list__actions {
+      display: flex;
+      gap: 0.25rem;
+      flex-shrink: 0;
+    }
+
+    .exercise-list__name {
+      font-weight: 600;
+    }
+
+    .history-list__item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: var(--color-surface);
+      padding: 1rem;
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius);
+      gap: 0.5rem 1rem;
+      flex-wrap: wrap;
+    }
+
+    .history-list__details {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .history-list__exercise {
+      font-weight: 600;
+    }
+
+    .history-list__meta {
+      color: var(--color-text-secondary);
+      font-size: 0.875rem;
+    }
+
+    .history-list__time {
+      color: var(--color-text-secondary);
+      font-size: 0.875rem;
+      text-align: right;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+
+    .dialog {
+      max-width: 500px;
+      width: 90%;
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius);
+      background-color: var(--color-surface);
+      color: var(--color-text-primary);
+      box-shadow: var(--shadow-md);
+      padding: 1.5rem;
+    }
+
+    .dialog::backdrop {
+      background-color: var(--color-dialog-backdrop);
+      -webkit-backdrop-filter: blur(2px);
+      backdrop-filter: blur(2px);
+    }
+
+    .dialog__title {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+    }
+
+    .dialog__message {
+      margin-bottom: 1.5rem;
+      color: var(--color-text-secondary);
+    }
+
+    .dialog__actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
   </style>
 </head>
+
 <body>
-  <div class="container"></div>
+  <div class="visually-hidden" id="announcer" role="log" aria-live="assertive" aria-atomic="true"></div>
+  <div class="container">
+    <header class="header">
+      <h1 class="header__title">Workout Tracker</h1>
+    </header>
+    <main>
+      <nav class="tabs" aria-label="Main navigation">
+        <ul class="tabs__list" role="tablist">
+          <li class="tabs__item" role="presentation">
+            <button class="tabs__button" role="tab" id="log-tab" aria-controls="log-panel">Log Workout</button>
+          </li>
+          <li class="tabs__item" role="presentation">
+            <button class="tabs__button" role="tab" id="settings-tab" aria-controls="settings-panel">Manage
+              Exercises</button>
+          </li>
+        </ul>
+      </nav>
+      <section id="log-panel" class="panel" role="tabpanel" aria-labelledby="log-tab">
+        <div class="card">
+          <h2 class="card__title" id="log-form-title">Log an Activity</h2>
+          <form id="log-form" class="form form--log" novalidate aria-labelledby="log-form-title">
+            <div class="form-group">
+              <label for="log-exercise" class="form-group__label">Exercise</label><select id="log-exercise"
+                class="input" name="exerciseId" required></select>
+            </div>
+            <div class="form-group" id="log-weight-group" hidden>
+              <label for="log-weight" class="form-group__label">Weight (kg)</label><input type="number" id="log-weight"
+                class="input" name="weight" min="0" step="0.5" placeholder="20">
+            </div>
+            <div class="form-group" id="log-reps-group" hidden>
+              <label for="log-reps" class="form-group__label">Reps</label><input type="number" id="log-reps"
+                class="input" name="reps" min="1" step="1" placeholder="10">
+            </div>
+            <div class="form-group" id="log-distance-group" hidden>
+              <label for="log-distance" class="form-group__label">Distance (km)</label><input type="number"
+                id="log-distance" class="input" name="distance" min="0" step="0.1" placeholder="5">
+            </div>
+            <div class="form-group" id="log-duration-group" hidden>
+              <label for="log-duration" class="form-group__label">Duration</label><input type="number" id="log-duration"
+                class="input" name="duration" min="1" step="1" placeholder="30">
+            </div>
+            <button type="submit" class="button button--primary form-group--full-width">Log Activity</button>
+          </form>
+        </div>
+        <div class="card" id="history-card">
+          <div class="card__title-container">
+            <h2 class="card__title" id="history-title">History</h2>
+            <button id="clear-history-filter" class="button button--link" hidden>Clear Filter</button>
+          </div>
+          <div id="history-container" role="feed" aria-busy="false">
+            <div id="history-list" class="collapsible-list"></div>
+            <p id="history-empty-state">No activities logged yet. Let's get to work!</p>
+          </div>
+        </div>
+      </section>
+      <section id="settings-panel" class="panel" role="tabpanel" aria-labelledby="settings-tab" hidden>
+        <div class="card">
+          <h2 class="card__title" id="add-exercise-title">Add New Exercise</h2>
+          <form id="add-exercise-form" class="form" novalidate aria-labelledby="add-exercise-title">
+            <div class="form-group form-group--full-width">
+              <label for="new-exercise-name" class="form-group__label">Exercise Name</label><input type="text"
+                id="new-exercise-name" class="input" required placeholder="Filter or add new exercise...">
+            </div>
+            <div class="form-group">
+              <label for="new-exercise-category" class="form-group__label">Category</label><select
+                id="new-exercise-category" class="input" required></select>
+            </div>
+            <div class="form-group">
+              <label for="new-exercise-type" class="form-group__label">Exercise Type</label><select
+                id="new-exercise-type" class="input" required></select>
+            </div>
+            <div class="form-group form-group--full-width">
+              <label for="new-exercise-notes" class="form-group__label">Notes (Optional)</label><textarea
+                id="new-exercise-notes" class="input"
+                placeholder="e.g., Proper form cues, machine number..."></textarea>
+            </div>
+            <button type="submit" class="button button--primary form-group--full-width">Add Exercise</button>
+          </form>
+        </div>
+        <div class="card">
+          <h2 class="card__title">Manage Exercises</h2>
+          <div id="manage-exercise-list" class="collapsible-list"></div>
+          <p id="manage-exercise-empty-state" hidden>No exercises match your filter.</p>
+        </div>
+      </section>
+    </main>
+  </div>
+  <dialog id="confirmation-dialog" class="dialog">
+    <h3 class="dialog__title" id="dialog-title">Confirm Action</h3>
+    <p class="dialog__message" id="dialog-message"></p>
+    <div class="dialog__actions">
+      <button class="button button--secondary" id="dialog-cancel-btn">Cancel</button>
+      <button class="button button--danger" id="dialog-confirm-btn">Confirm</button>
+    </div>
+  </dialog>
 
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // ============================================
-      // APPLICATION STATE AND CONSTANTS
-      // ============================================
-      const STORAGE_KEY = 'workoutTrackerState_v1';
-      const EXERCISE_CATEGORIES = [
-        'Cardio',
-        'Chest',
-        'Back',
-        'Legs',
-        'Shoulders',
-        'Biceps',
-        'Triceps',
-        'Core',
-        'Other'
-      ];
-
-      function getInitialExercises() {
-        return [
-          {
-            id: `ex-${
-              Date.now() + 1
-            }`,
-            name: 'Running',
-            category: 'Cardio'
-          },
-          {
-            id: `ex-${
-              Date.now() + 2
-            }`,
-            name: 'Cycling',
-            category: 'Cardio'
-          },
-          {
-            id: `ex-${
-              Date.now() + 3
-            }`,
-            name: 'Barbell Bench Press',
-            category: 'Chest'
-          },
-          {
-            id: `ex-${
-              Date.now() + 4
-            }`,
-            name: 'Dumbbell Bench Press',
-            category: 'Chest'
-          }, {
-            id: `ex-${
-              Date.now() + 5
-            }`,
-            name: 'Push-ups',
-            category: 'Chest'
-          }, {
-            id: `ex-${
-              Date.now() + 6
-            }`,
-            name: 'Barbell Row',
-            category: 'Back'
-          }, {
-            id: `ex-${
-              Date.now() + 7
-            }`,
-            name: 'Pull-ups',
-            category: 'Back'
-          }, {
-            id: `ex-${
-              Date.now() + 8
-            }`,
-            name: 'Lat Pulldown',
-            category: 'Back'
-          }, {
-            id: `ex-${
-              Date.now() + 9
-            }`,
-            name: 'Deadlift',
-            category: 'Back'
-          }, {
-            id: `ex-${
-              Date.now() + 10
-            }`,
-            name: 'Barbell Squat',
-            category: 'Legs'
-          }, {
-            id: `ex-${
-              Date.now() + 11
-            }`,
-            name: 'Leg Press',
-            category: 'Legs'
-          }, {
-            id: `ex-${
-              Date.now() + 12
-            }`,
-            name: 'Lunges',
-            category: 'Legs'
-          }, {
-            id: `ex-${
-              Date.now() + 13
-            }`,
-            name: 'Overhead Press (Barbell)',
-            category: 'Shoulders'
-          }, {
-            id: `ex-${
-              Date.now() + 14
-            }`,
-            name: 'Lateral Raises',
-            category: 'Shoulders'
-          }, {
-            id: `ex-${
-              Date.now() + 15
-            }`,
-            name: 'Barbell Curl',
-            category: 'Biceps'
-          }, {
-            id: `ex-${
-              Date.now() + 16
-            }`,
-            name: 'Dumbbell Curl',
-            category: 'Biceps'
-          }, {
-            id: `ex-${
-              Date.now() + 17
-            }`,
-            name: 'Tricep Pushdown',
-            category: 'Triceps'
-          }, {
-            id: `ex-${
-              Date.now() + 18
-            }`,
-            name: 'Dips',
-            category: 'Triceps'
-          }, {
-            id: `ex-${
-              Date.now() + 19
-            }`,
-            name: 'Crunches',
-            category: 'Core'
-          }, {
-            id: `ex-${
-              Date.now() + 20
-            }`,
-            name: 'Leg Raises',
-            category: 'Core'
-          }, {
-            id: `ex-${
-              Date.now() + 21
-            }`,
-            name: 'Plank',
-            category: 'Core'
-          },
-        ];
-      }
-
-      const defaultState = {
-        activeTab: 'log',
-        exercises: getInitialExercises(),
-        history: [],
-        logForm: {
-          exerciseId: '',
-          weight: '',
-          reps: '',
-          time: ''
+      // ===================================================================================
+      // STATE MODULE
+      // ===================================================================================
+      const State = {
+        _data: {},
+        _defaults: {
+          activeTab: 'log', exercises: [], history: [],
+          logForm: { exerciseId: '', weight: '', reps: '', distance: '', duration: '' },
+          settings: { filter: '', editingExerciseId: null, editingCategory: null, keepCategoryOpen: null }
         },
-        settings: {
-          filter: '',
-          editingExerciseId: null,
-          editingCategory: null
+        _constants: {
+          STORAGE_KEY: 'workoutTrackerState_v5',
+          EXERCISE_CATEGORIES: ['Cardio', 'Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Other'],
+          EXERCISE_TYPES: {
+            WEIGHT_REPS: { id: 'weight_reps', label: 'Weight & Reps' }, REPS_ONLY: { id: 'reps_only', label: 'Reps Only' },
+            TIMED: { id: 'timed', label: 'Timed (e.g., Plank)' }, DISTANCE_TIME: { id: 'distance_time', label: 'Distance & Time' }
+          }
+        },
+
+        init() { this._data = this._load(); },
+
+        _load() {
+          try {
+            const storedState = localStorage.getItem(this._constants.STORAGE_KEY);
+            if (!storedState) {
+              return this._getInitialState();
+            }
+            let parsedState = JSON.parse(storedState);
+            if (parsedState.exercises && parsedState.exercises.length > 0 && !parsedState.exercises[0].type) {
+              parsedState.exercises = this._migrateExercises(parsedState.exercises);
+            }
+            const allIds = [
+              ...(parsedState.exercises || []).map(item => parseInt(item.id.split('-')[1])),
+              ...(parsedState.history || []).map(item => parseInt(item.id.split('-')[1]))
+            ].filter(Boolean);
+            const nextId = (allIds.length > 0 ? Math.max(...allIds) : 0) + 1;
+            const initialState = this._getInitialState(nextId);
+            return { ...initialState, ...parsedState };
+          } catch (error) {
+            console.error('Failed to load state, falling back to defaults.', error);
+            return this._getInitialState();
+          }
+        },
+
+        save() {
+          const stateToSave = {
+            exercises: this._data.exercises, history: this._data.history,
+            activeTab: this._data.activeTab, logForm: { exerciseId: this._data.logForm.exerciseId }
+          };
+          localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify(stateToSave));
+        },
+
+        _getInitialState(startId = 1) {
+          let nextId = startId;
+          const generateId = (prefix) => `${prefix}-${nextId++}`;
+          const { WEIGHT_REPS, REPS_ONLY, TIMED, DISTANCE_TIME } = this._constants.EXERCISE_TYPES;
+          const defaultExercises = [
+            { id: generateId('ex'), name: 'Running', category: 'Cardio', type: DISTANCE_TIME.id, notes: 'Keep a steady pace.' }, { id: generateId('ex'), name: 'Jump Rope', category: 'Cardio', type: TIMED.id, notes: 'Count seconds of activity.' },
+            { id: generateId('ex'), name: 'Barbell Bench Press', category: 'Chest', type: WEIGHT_REPS.id, notes: '' }, { id: generateId('ex'), name: 'Push-ups', category: 'Chest', type: REPS_ONLY.id, notes: '' },
+            { id: generateId('ex'), name: 'Barbell Row', category: 'Back', type: WEIGHT_REPS.id, notes: 'Pull to lower chest, squeeze back.' }, { id: generateId('ex'), name: 'Pull-ups', category: 'Back', type: REPS_ONLY.id, notes: '' },
+            { id: generateId('ex'), name: 'Barbell Squat', category: 'Legs', type: WEIGHT_REPS.id, notes: '' }, { id: generateId('ex'), name: 'Wall Sit', category: 'Legs', type: TIMED.id, notes: 'Keep thighs parallel to the ground.' },
+            { id: generateId('ex'), name: 'Overhead Press (Barbell)', category: 'Shoulders', type: WEIGHT_REPS.id, notes: '' }, { id: generateId('ex'), name: 'Dumbbell Curl', category: 'Biceps', type: WEIGHT_REPS.id, notes: '' },
+            { id: generateId('ex'), name: 'Tricep Pushdown (Cable)', category: 'Triceps', type: WEIGHT_REPS.id, notes: '' }, { id: generateId('ex'), name: 'Dips (Bodyweight)', category: 'Triceps', type: REPS_ONLY.id, notes: '' },
+            { id: generateId('ex'), name: 'Crunches', category: 'Core', type: REPS_ONLY.id, notes: '' }, { id: generateId('ex'), name: 'Plank', category: 'Core', type: TIMED.id, notes: 'Keep back straight.' },
+            { id: generateId('ex'), name: 'Stretching', category: 'Other', type: TIMED.id, notes: 'Hold each stretch for a number of seconds.' }
+          ];
+          const initialState = JSON.parse(JSON.stringify(this._defaults));
+          initialState.exercises = defaultExercises;
+          initialState._nextId = nextId;
+          return initialState;
+        },
+
+        _migrateExercises(exercises) {
+          console.log('Migrating old exercise data to new format...');
+          return exercises.map(ex => ({ ...ex, type: ex.category === 'Cardio' ? this._constants.EXERCISE_TYPES.DISTANCE_TIME.id : this._constants.EXERCISE_TYPES.WEIGHT_REPS.id, notes: ex.notes || '' }));
+        },
+        get() { return this._data; }, getConstants() { return this._constants; },
+        generateId(prefix) { return `${prefix}-${this._data._nextId++}`; }, addExercise(exercise) { this._data.exercises.push(exercise); },
+        updateExercise(id, updates) {
+          const ex = this._data.exercises.find(ex => ex.id === id);
+          if (ex) {
+            Object.assign(ex, updates);
+          }
+        },
+        deleteExercise(id) {
+          this._data.exercises = this._data.exercises.filter(ex => ex.id !== id);
+          this._data.history = this._data.history.filter(h => h.exerciseId !== id);
+        },
+        addHistoryItem(item) { this._data.history.push(item); }, setActiveTab(tabId) { this._data.activeTab = tabId; },
+        setLogFormField(field, value) { this._data.logForm[field] = value; },
+        resetLogForm() { this._data.logForm = { ...this._defaults.logForm, exerciseId: this._data.logForm.exerciseId }; },
+        setFilter(query) { this._data.settings.filter = query; },
+        setEditingExercise(id, category) {
+          this._data.settings.editingExerciseId = id;
+          this._data.settings.editingCategory = category;
+        },
+        setKeepCategoryOpen(category) { this._data.settings.keepCategoryOpen = category; }
+      };
+
+      // ===================================================================================
+      // DOM MODULE
+      // ===================================================================================
+      const DOM = {
+        init() {
+          const get = (id) => document.getElementById(id);
+          this.announcer = get('announcer');
+          this.tabs = document.querySelector('.tabs__list');
+          this.logForm = get('log-form');
+          this.logExerciseSelect = get('log-exercise');
+          this.logGroups = { weight: get('log-weight-group'), reps: get('log-reps-group'), distance: get('log-distance-group'), duration: get('log-duration-group') };
+          this.logInputs = { weight: get('log-weight'), reps: get('log-reps'), distance: get('log-distance'), duration: get('log-duration') };
+          this.logDurationLabel = this.logGroups.duration.querySelector('label');
+          this.historyContainer = get('history-container');
+          this.historyList = get('history-list');
+          this.historyTitle = get('history-title');
+          this.historyEmptyState = get('history-empty-state');
+          this.clearHistoryFilterBtn = get('clear-history-filter');
+          this.addExerciseForm = get('add-exercise-form');
+          this.newExerciseInputs = { name: get('new-exercise-name'), category: get('new-exercise-category'), type: get('new-exercise-type'), notes: get('new-exercise-notes') };
+          this.manageExerciseList = get('manage-exercise-list');
+          this.manageExerciseEmptyState = get('manage-exercise-empty-state');
+          this.dialog = get('confirmation-dialog');
+          this.dialogTitle = get('dialog-title');
+          this.dialogMessage = get('dialog-message');
+          this.dialogConfirmBtn = get('dialog-confirm-btn');
+          this.dialogCancelBtn = get('dialog-cancel-btn');
         }
       };
 
-      let state = loadState();
-
-      function loadState() {
-        const storedState = localStorage.getItem(STORAGE_KEY);
-        if (storedState) {
-          const parsedState = JSON.parse(storedState);
-          const mergedLogForm = {
-            ... defaultState.logForm,
-            exerciseId: parsedState.logForm ?. exerciseId || ''
-          };
-          return {
-            ... defaultState,
-            ... parsedState,
-            logForm: mergedLogForm,
-            exercises: parsedState.exercises && parsedState.exercises.length > 0 ? parsedState.exercises : defaultState.exercises
-          };
-        }
-        return {
-          ... defaultState
-        };
-      }
-
-      function saveState() {
-        const stateToSave = {
-          exercises: state.exercises,
-          history: state.history,
-          activeTab: state.activeTab,
-          logForm: {
-            exerciseId: state.logForm.exerciseId
-          }
-        };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
-      }
-
-      // ============================================
-      // DOM INJECTION & CACHING
-      // ============================================
-      const container = document.querySelector('.container');
-      container.innerHTML = `
-          <header class="header"><h1 class="header__title">Workout Tracker</h1></header>
-          <main>
-            <nav class="tabs" aria-label="Main navigation"><ul class="tabs__list" role="tablist"><li class="tabs__item" role="presentation"><a href="#log-panel" class="tabs__button" role="tab" id="log-tab">Log Workout</a></li><li class="tabs__item" role="presentation"><a href="#settings-panel" class="tabs__button" role="tab" id="settings-tab">Settings</a></li></ul></nav>
-            <section id="log-panel" class="panel" role="tabpanel" aria-labelledby="log-tab">
-              <div class="card"><div class="card__title-container"><h2 class="card__title">Log an Activity</h2></div><form id="log-form" class="form form--log"><div class="form-group"><label for="log-exercise" class="form-group__label">Exercise</label><select id="log-exercise" class="input" name="exerciseId" required></select></div><div class="form-group" id="log-weight-group"><label for="log-weight" class="form-group__label">Weight (kg)</label><input type="number" id="log-weight" class="input" name="weight" min="0" step="0.5" placeholder="20"></div><div class="form-group" id="log-reps-group"><label for="log-reps" class="form-group__label">Reps</label><input type="number" id="log-reps" class="input" name="reps" min="1" step="1" placeholder="10"></div><div class="form-group" id="log-time-group"><label for="log-time" class="form-group__label">Time (minutes)</label><input type="number" id="log-time" class="input" name="time" min="1" step="1" placeholder="30"></div><button type="submit" class="button button--primary form-group--full-width">Log Activity</button></form></div>
-              <div class="card" id="history-card"><div class="card__title-container"><h2 class="card__title" id="history-title">History</h2><button id="clear-history-filter" class="button button--link" hidden>Clear Filter</button></div><div id="history-container" role="feed" aria-busy="false"><div id="history-list" class="collapsible-list"></div><p id="history-empty-state">No activities logged yet. Let's get to work!</p></div></div>
-            </section>
-            <section id="settings-panel" class="panel" role="tabpanel" aria-labelledby="settings-tab">
-              <div class="card"><div class="card__title-container"><h2 class="card__title">Add New Exercise</h2></div><form id="add-exercise-form" class="form"><div class="form-group form-group--full-width"><label for="new-exercise-name" class="form-group__label">Exercise Name</label><input type="text" id="new-exercise-name" class="input" required placeholder="Filter or add new exercise..."></div><div class="form-group form-group--full-width"><label for="new-exercise-category" class="form-group__label">Category</label><select id="new-exercise-category" class="input" required></select></div><button type="submit" class="button button--primary form-group--full-width">Add Exercise</button></form></div>
-              <div class="card"><div class="card__title-container"><h2 class="card__title">Manage Exercises</h2></div><div id="manage-exercise-list" class="collapsible-list"></div><p id="manage-exercise-empty-state" hidden>No exercises match your filter.</p></div>
-            </section>
-          </main>`;
-
-      const getElementById = (id) => document.getElementById(id);
-      const logForm = getElementById('log-form');
-      const logExerciseSelect = getElementById('log-exercise');
-      const logWeightGroup = getElementById('log-weight-group');
-      const logRepsGroup = getElementById('log-reps-group');
-      const logTimeGroup = getElementById('log-time-group');
-      const logWeightInput = getElementById('log-weight');
-      const logRepsInput = getElementById('log-reps');
-      const logTimeInput = getElementById('log-time');
-      const historyContainer = getElementById('history-container');
-      const historyList = getElementById('history-list');
-      const historyTitle = getElementById('history-title');
-      const historyEmptyState = getElementById('history-empty-state');
-      const clearHistoryFilterBtn = getElementById('clear-history-filter');
-      const addExerciseForm = getElementById('add-exercise-form');
-      const newExerciseNameInput = getElementById('new-exercise-name');
-      const newExerciseCategorySelect = getElementById('new-exercise-category');
-      const manageExerciseList = getElementById('manage-exercise-list');
-      const manageExerciseEmptyState = getElementById('manage-exercise-empty-state');
-
-      // ============================================
-      // RENDER FUNCTIONS
-      // ============================================
-      function renderApplication() {
-        historyContainer.setAttribute('aria-busy', 'true');
-        renderTabs();
-        renderLogForm();
-        renderHistory();
-        renderManageExerciseList();
-        historyContainer.setAttribute('aria-busy', 'false');
-      }
-
-      function renderTabs() {
-        document.querySelectorAll('[role="tab"]').forEach(tab => {
-          tab.setAttribute('aria-selected', tab.id === `${
-            state.activeTab
-          }-tab`);
-        });
-        document.querySelectorAll('[role="tabpanel"]').forEach(panel => {
-          panel.hidden = panel.id !== `${
-            state.activeTab
-          }-panel`;
-        });
-      }
-
-      function updateLogFormVisibility() {
-        const selectedExercise = state.exercises.find(ex => ex.id === logExerciseSelect.value);
-        const isCardio = selectedExercise && selectedExercise.category === 'Cardio';
-        logWeightGroup.hidden = isCardio;
-        logRepsGroup.hidden = isCardio;
-        logTimeGroup.hidden = ! isCardio;
-        logWeightInput.disabled = isCardio;
-        logRepsInput.disabled = isCardio;
-        logTimeInput.disabled = ! isCardio;
-        logRepsInput.required = ! isCardio;
-        logTimeInput.required = isCardio;
-        if (isCardio) {
-          logForm.classList.add('form--log-cardio');
-        } else {
-          logForm.classList.remove('form--log-cardio');
-        }
-      }
-
-      function renderLogForm() {
-        logExerciseSelect.innerHTML = '<option value="">Select an exercise...</option>';
-        const exercisesByCategory = state.exercises.reduce((acc, ex) => {
-          (acc[ex.category] = acc[ex.category] || []).push(ex);
-          return acc;
-        }, {});
-
-        // Get the keys from the generated object and sort them alphabetically
-        const sortedCategories = Object.keys(exercisesByCategory).sort();
-
-        sortedCategories.forEach(category => {
-          const optgroup = document.createElement('optgroup');
-          optgroup.label = category;
-          exercisesByCategory[category].sort((a, b) => a.name.localeCompare(b.name)).forEach(ex => {
-            optgroup.innerHTML += `<option value="${
-              ex.id
-            }">${
-              ex.name
-            }</option>`;
+      // ===================================================================================
+      // UI MODULE
+      // ===================================================================================
+      const UI = {
+        render() {
+          DOM.historyContainer.setAttribute('aria-busy', 'true');
+          this.renderTabs();
+          this.renderLogForm();
+          this.renderHistory();
+          this.renderManageExerciseList();
+          DOM.historyContainer.setAttribute('aria-busy', 'false');
+        },
+        renderTabs() {
+          const { activeTab } = State.get();
+          document.querySelectorAll('[role="tab"]').forEach(tab => {
+            const isSelected = tab.id === `${activeTab}-tab`;
+            tab.setAttribute('aria-selected', isSelected);
+            const panel = document.getElementById(tab.getAttribute('aria-controls'));
+            if (panel) {
+              panel.hidden = !isSelected;
+            }
           });
-          logExerciseSelect.appendChild(optgroup);
-        });
-
-        logExerciseSelect.value = state.logForm.exerciseId;
-        logWeightInput.value = state.logForm.weight;
-        logRepsInput.value = state.logForm.reps;
-        logTimeInput.value = state.logForm.time;
-        updateLogFormVisibility();
-      }
-
-      function renderHistory() {
-        const filterExerciseId = state.logForm.exerciseId;
-        let historyToRender = state.history;
-        if (filterExerciseId) {
-          const filteredExercise = state.exercises.find(ex => ex.id === filterExerciseId);
-          historyTitle.textContent = `History for ${
-            filteredExercise ? filteredExercise.name : 'Unknown'
-          }`;
-          clearHistoryFilterBtn.hidden = false;
-          historyToRender = state.history.filter(item => item.exerciseId === filterExerciseId);
-        } else {
-          historyTitle.textContent = 'History';
-          clearHistoryFilterBtn.hidden = true;
-        } historyList.innerHTML = '';
-        const sortedHistory = [... historyToRender].sort((a, b) => b.timestamp - a.timestamp);
-        if (sortedHistory.length === 0) {
-          historyEmptyState.hidden = false;
-          historyList.hidden = true;
-          historyEmptyState.textContent = filterExerciseId ? 'No activities logged for this exercise yet.' : "No activities logged yet. Let's get to work!";
-        } else {
-          historyEmptyState.hidden = true;
-          historyList.hidden = false;
+        },
+        updateLogFormVisibility() {
+          const { exercises, logForm } = State.get();
+          const selectedExercise = exercises.find(ex => ex.id === logForm.exerciseId);
+          Object.values(DOM.logGroups).forEach(g => g.hidden = true);
+          Object.values(DOM.logInputs).forEach(i => i.required = false);
+          DOM.logForm.className = 'form form--log';
+          if (!selectedExercise) {
+            return;
+          }
+          const { EXERCISE_TYPES } = State.getConstants();
+          let visibleGroups = 0;
+          switch (selectedExercise.type) {
+            case EXERCISE_TYPES.WEIGHT_REPS.id:
+              DOM.logGroups.weight.hidden = false;
+              DOM.logInputs.weight.required = true;
+              DOM.logGroups.reps.hidden = false;
+              DOM.logInputs.reps.required = true;
+              visibleGroups = 2;
+              break;
+            case EXERCISE_TYPES.REPS_ONLY.id:
+              DOM.logGroups.reps.hidden = false;
+              DOM.logInputs.reps.required = true;
+              visibleGroups = 1;
+              break;
+            case EXERCISE_TYPES.TIMED.id:
+              DOM.logGroups.duration.hidden = false;
+              DOM.logInputs.duration.required = true;
+              DOM.logDurationLabel.textContent = 'Duration (seconds)';
+              DOM.logInputs.duration.placeholder = '60';
+              visibleGroups = 1;
+              break;
+            case EXERCISE_TYPES.DISTANCE_TIME.id:
+              DOM.logGroups.distance.hidden = false;
+              DOM.logInputs.distance.required = true;
+              DOM.logGroups.duration.hidden = false;
+              DOM.logInputs.duration.required = true;
+              DOM.logDurationLabel.textContent = 'Time (minutes)';
+              DOM.logInputs.duration.placeholder = '30';
+              visibleGroups = 2;
+              break;
+          }
+          if (visibleGroups === 2) {
+            DOM.logForm.classList.add('grid-cols-3');
+          } else if (visibleGroups === 1) {
+            DOM.logForm.classList.add('grid-cols-2');
+          }
+        },
+        renderLogForm() {
+          const { exercises, logForm } = State.get();
+          DOM.logExerciseSelect.innerHTML = '<option value="">Select an exercise...</option>';
+          const exercisesByCategory = exercises.reduce((acc, ex) => {
+            (acc[ex.category] = acc[ex.category] || []).push(ex);
+            return acc;
+          }, {});
+          Object.keys(exercisesByCategory).sort().forEach(category => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = category;
+            exercisesByCategory[category].sort((a, b) => a.name.localeCompare(b.name)).forEach(ex => {
+              const option = document.createElement('option');
+              option.value = ex.id;
+              option.textContent = ex.name;
+              optgroup.appendChild(option);
+            });
+            DOM.logExerciseSelect.appendChild(optgroup);
+          });
+          DOM.logExerciseSelect.value = logForm.exerciseId;
+          Object.entries(logForm).forEach(([key, value]) => {
+            if (DOM.logInputs[key]) {
+              DOM.logInputs[key].value = value;
+            }
+          });
+          this.updateLogFormVisibility();
+        },
+        renderHistory() {
+          const { exercises, history, logForm } = State.get();
+          const filterExerciseId = logForm.exerciseId;
+          let historyToRender = history;
+          if (filterExerciseId) {
+            const filteredExercise = exercises.find(ex => ex.id === filterExerciseId);
+            DOM.historyTitle.textContent = `History for ${filteredExercise?.name || 'Unknown'}`;
+            DOM.clearHistoryFilterBtn.hidden = false;
+            historyToRender = history.filter(item => item.exerciseId === filterExerciseId);
+          } else {
+            DOM.historyTitle.textContent = 'History';
+            DOM.clearHistoryFilterBtn.hidden = true;
+          }
+          DOM.historyList.innerHTML = '';
+          const sortedHistory = [...historyToRender].sort((a, b) => b.timestamp - a.timestamp);
+          DOM.historyEmptyState.hidden = sortedHistory.length > 0;
+          DOM.historyList.hidden = sortedHistory.length === 0;
+          if (sortedHistory.length === 0) {
+            DOM.historyEmptyState.textContent = filterExerciseId ? 'No activities logged for this exercise yet.' : 'No activities logged yet. Let\'s get to work!';
+            return;
+          }
           const activitiesByDate = sortedHistory.reduce((acc, activity) => {
             const date = new Date(activity.timestamp).toLocaleDateString('en-CA');
             (acc[date] = acc[date] || []).push(activity);
@@ -640,287 +804,337 @@
           Object.keys(activitiesByDate).sort((a, b) => new Date(b) - new Date(a)).forEach((dateString, index) => {
             const activities = activitiesByDate[dateString];
             const details = document.createElement('details');
-            if (index === 0) 
-              details.open = true;
-            
-            const summary = document.createElement('summary');
-            summary.className = 'collapsible-group__summary';
-            const formattedDate = new Date(dateString).toLocaleDateString(undefined, {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            });
-            summary.textContent = `${formattedDate} (${
-              activities.length
-            } activit${
-              activities.length > 1 ? 'ies' : 'y'
-            })`;
-            const innerList = document.createElement('ul');
-            innerList.className = 'collapsible-group__list';
-            activities.forEach(item => {
-              const exercise = state.exercises.find(ex => ex.id === item.exerciseId);
-              if (! exercise) 
-                return;
-              
-              const metaText = item.hasOwnProperty('time') ? `${
-                item.time
-              } min` : `${
-                item.weight || 0
-              } kg × ${
-                item.reps
-              }`;
-              innerList.innerHTML += `<li class="history-list__item"><div class="history-list__details"><span class="history-list__exercise">${
-                exercise.name
-              }</span><span class="history-list__meta">${metaText}</span></div><span class="history-list__time">${
-                new Date(item.timestamp).toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit'
-                })
-              }</span></li>`;
-            });
-            details.append(summary, innerList);
-            historyList.appendChild(details);
-          });
-        }
-      }
-
-      function renderManageExerciseList() {
-        newExerciseCategorySelect.innerHTML = EXERCISE_CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
-        manageExerciseList.innerHTML = '';
-        const filterQuery = state.settings.filter.trim().toLowerCase();
-        let filteredExercises = state.exercises;
-        if (filterQuery) {
-          filteredExercises = state.exercises.filter(ex => ex.name.toLowerCase().includes(filterQuery));
-        }
-        manageExerciseEmptyState.hidden = filteredExercises.length > 0;
-        manageExerciseList.hidden = filteredExercises.length === 0;
-        if (filteredExercises.length > 0) {
-          const exercisesByCategory = filteredExercises.reduce((acc, ex) => {
-            (acc[ex.category] = acc[ex.category] || []).push(ex);
-            return acc;
-          }, {});
-          const sortedCategories = Object.keys(exercisesByCategory).sort();
-          sortedCategories.forEach(category => {
-            const details = document.createElement('details');
-            if (filterQuery || state.settings.editingCategory === category) {
+            if (index === 0) {
               details.open = true;
             }
             const summary = document.createElement('summary');
             summary.className = 'collapsible-group__summary';
-            const count = exercisesByCategory[category].length;
-            summary.textContent = `${category} (${count} exercise${
-              count > 1 ? 's' : ''
-            })`;
-            const list = document.createElement('ul');
-            list.className = 'collapsible-group__list';
-            exercisesByCategory[category].sort((a, b) => a.name.localeCompare(b.name)).forEach(ex => {
-              list.appendChild(createExerciseListItem(ex));
+            summary.textContent = `${new Date(dateString).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} (${activities.length} activit${activities.length > 1 ? 'ies' : 'y'})`;
+            const innerList = document.createElement('ul');
+            innerList.className = 'collapsible-group__list';
+            activities.forEach(item => {
+              const exercise = exercises.find(ex => ex.id === item.exerciseId);
+              if (!exercise) {
+                return;
+              }
+              let metaText = '';
+              if (item.hasOwnProperty('weight')) {
+                metaText = `${item.weight || 0} kg × ${item.reps} reps`;
+              } else if (item.hasOwnProperty('distance')) {
+                metaText = `${item.distance} km in ${item.duration} min`;
+              } else if (item.hasOwnProperty('reps')) {
+                metaText = `${item.reps} reps`;
+              } else if (item.hasOwnProperty('duration')) {
+                metaText = `${item.duration} seconds`;
+              }
+              const li = document.createElement('li');
+              li.className = 'history-list__item';
+              li.innerHTML = `<div class="history-list__details"><span class="history-list__exercise">${exercise.name}</span><span class="history-list__meta">${metaText}</span></div><span class="history-list__time">${new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+              innerList.appendChild(li);
             });
-            details.append(summary, list);
-            manageExerciseList.appendChild(details);
+            details.append(summary, innerList);
+            DOM.historyList.appendChild(details);
           });
-        }
-      }
+        },
+        renderManageExerciseList() {
+          const { exercises, settings } = State.get();
+          const { EXERCISE_CATEGORIES, EXERCISE_TYPES } = State.getConstants();
+          const createOptions = (items) => items.map(item => `<option value="${item.value}">${item.label}</option>`).join('');
+          DOM.newExerciseInputs.category.innerHTML = createOptions(EXERCISE_CATEGORIES.map(c => ({ value: c, label: c })));
+          DOM.newExerciseInputs.type.innerHTML = createOptions(Object.values(EXERCISE_TYPES).map(t => ({ value: t.id, label: t.label })));
+          DOM.manageExerciseList.innerHTML = '';
+          const filterQuery = settings.filter.trim().toLowerCase();
+          const filteredExercises = exercises.filter(ex => ex.name.toLowerCase().includes(filterQuery));
+          DOM.manageExerciseEmptyState.hidden = filteredExercises.length > 0;
+          DOM.manageExerciseList.hidden = filteredExercises.length === 0;
+          if (filteredExercises.length > 0) {
+            const exercisesByCategory = filteredExercises.reduce((acc, ex) => {
+              (acc[ex.category] = acc[ex.category] || []).push(ex);
+              return acc;
+            }, {});
+            Object.keys(exercisesByCategory).sort().forEach(category => {
+              const details = document.createElement('details');
+              if (filterQuery || settings.editingCategory === category || settings.keepCategoryOpen === category) { details.open = true; }
+              const summary = document.createElement('summary');
+              summary.className = 'collapsible-group__summary';
+              summary.textContent = `${category} (${exercisesByCategory[category].length} exercise${exercisesByCategory[category].length > 1 ? 's' : ''})`;
+              const list = document.createElement('ul');
+              list.className = 'collapsible-group__list';
+              exercisesByCategory[category].sort((a, b) => a.name.localeCompare(b.name)).forEach(ex => list.appendChild(this._createExerciseListItem(ex)));
+              details.append(summary, list);
+              DOM.manageExerciseList.appendChild(details);
+            });
+          }
+        },
+        _createExerciseListItem(exercise) {
+          const { editingExerciseId } = State.get().settings;
+          const li = document.createElement('li');
+          li.className = 'exercise-list__item';
+          if (editingExerciseId === exercise.id) {
+            li.style.padding = '1rem';
+            li.appendChild(this._createExerciseEditView(exercise));
+          } else { li.appendChild(this._createExerciseDisplayView(exercise)); }
+          return li;
+        },
+        _createExerciseDisplayView(exercise) {
+          const fragment = document.createDocumentFragment();
+          const mainDiv = document.createElement('div');
+          mainDiv.className = 'exercise-list__item-main';
+          const nameSpan = document.createElement('span');
+          nameSpan.className = 'exercise-list__name';
+          nameSpan.textContent = exercise.name;
+          mainDiv.appendChild(nameSpan);
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'exercise-list__actions';
+          const editButton = this._createIconButton({ action: 'edit', exerciseId: exercise.id, label: `Edit ${exercise.name}`, svgPath: 'M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zM1.586 11.5 3.207 10 9.707 3.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l-6.5 6.5zm-1.25 2.5.106-.106 3.821-1.528-1.528 3.821-.106.106a.5.5 0 0 1-.468-.325z' });
+          const deleteButton = this._createIconButton({ action: 'delete', exerciseId: exercise.id, label: `Delete ${exercise.name}`, extraClass: 'button--danger-hover', svgPath: 'M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0zM14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3V2h11v1z' });
+          actionsDiv.append(editButton, deleteButton);
+          fragment.append(mainDiv, actionsDiv);
+          return fragment;
+        },
+        _createExerciseEditView(exercise) {
+          const { EXERCISE_CATEGORIES, EXERCISE_TYPES } = State.getConstants();
+          const createSelect = (id, options, selectedValue) => {
+            const select = document.createElement('select');
+            select.className = 'input';
+            select.id = id;
+            options.forEach(opt => {
+              const option = document.createElement('option');
+              option.value = opt.value;
+              option.textContent = opt.label;
+              if (opt.value === selectedValue) {
+                option.selected = true;
+              }
+              select.appendChild(option);
+            });
+            return select;
+          };
+          const fieldsDiv = document.createElement('div');
+          fieldsDiv.className = 'exercise-list__edit-fields';
+          const nameInput = document.createElement('input');
+          nameInput.type = 'text';
+          nameInput.className = 'input';
+          nameInput.required = true;
+          nameInput.id = `edit-exercise-name-${exercise.id}`;
+          nameInput.value = exercise.name;
+          const categorySelect = createSelect(`edit-exercise-category-${exercise.id}`, EXERCISE_CATEGORIES.map(c => ({ value: c, label: c })), exercise.category);
+          const typeSelect = createSelect(`edit-exercise-type-${exercise.id}`, Object.values(EXERCISE_TYPES).map(t => ({ value: t.id, label: t.label })), exercise.type);
+          const notesTextarea = document.createElement('textarea');
+          notesTextarea.className = 'input';
+          notesTextarea.placeholder = 'Notes...';
+          notesTextarea.id = `edit-exercise-notes-${exercise.id}`;
+          notesTextarea.textContent = exercise.notes || '';
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'exercise-list__actions';
+          actionsDiv.style.justifyContent = 'flex-end';
+          actionsDiv.style.marginTop = '0.5rem';
+          const cancelButton = this._createTextButton({ text: 'Cancel', action: 'cancel', exerciseId: exercise.id, classList: ['button--secondary'] });
+          const saveButton = this._createTextButton({ text: 'Save', action: 'save', exerciseId: exercise.id, classList: ['button--primary'] });
+          actionsDiv.append(cancelButton, saveButton);
+          fieldsDiv.append(nameInput, categorySelect, typeSelect, notesTextarea, actionsDiv);
+          return fieldsDiv;
+        },
+        _createIconButton({ action, exerciseId, label, svgPath, extraClass = '' }) {
+          const button = document.createElement('button');
+          button.className = `button button--icon ${extraClass}`;
+          button.type = 'button';
+          button.dataset.action = action;
+          button.dataset.exerciseId = exerciseId;
+          button.setAttribute('aria-label', label);
+          button.innerHTML = `<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="${svgPath}"/></svg>`;
+          return button;
+        },
+        _createTextButton({ text, action, exerciseId, classList = [] }) {
+          const button = document.createElement('button');
+          button.className = `button ${classList.join(' ')}`;
+          button.type = 'button';
+          button.textContent = text;
+          button.dataset.action = action;
+          button.dataset.exerciseId = exerciseId;
+          return button;
+        },
+        showDialog({ title, message, confirmText = 'Confirm', showCancel = true }) {
+          DOM.dialogTitle.textContent = title;
+          DOM.dialogMessage.textContent = message;
+          DOM.dialogConfirmBtn.textContent = confirmText;
+          DOM.dialogCancelBtn.hidden = !showCancel;
+          DOM.dialog.showModal();
+          return new Promise(resolve => {
+            const cleanup = (result) => {
+              DOM.dialogConfirmBtn.removeEventListener('click', confirmHandler);
+              DOM.dialogCancelBtn.removeEventListener('click', cancelHandler);
+              DOM.dialog.close();
+              resolve(result);
+            };
+            const confirmHandler = () => cleanup(true);
+            const cancelHandler = () => cleanup(false);
+            DOM.dialogConfirmBtn.addEventListener('click', confirmHandler, { once: true });
+            DOM.dialogCancelBtn.addEventListener('click', cancelHandler, { once: true });
+          });
+        },
+        announce(message) { DOM.announcer.textContent = message; }
+      };
 
-      function createExerciseListItem(exercise) {
-        const listItem = document.createElement('li');
-        listItem.className = 'exercise-list__item';
-        if (state.settings.editingExerciseId === exercise.id) {
-          const categoryOptions = EXERCISE_CATEGORIES.map(
-            cat => `<option value="${cat}" ${
-              cat === exercise.category ? 'selected' : ''
-            }>${cat}</option>`
-          ).join('');
-          listItem.innerHTML = `
-              <div class="exercise-list__edit-fields">
-                <input type="text" class="input" id="edit-exercise-name-${
-            exercise.id
-          }" value="${
-            exercise.name
-          }" required>
-                <select class="input" id="edit-exercise-category-${
-            exercise.id
-          }">${categoryOptions}</select>
-              </div>
-              <div class="exercise-list__actions">
-                <button class="button button--primary" data-exercise-id="${
-            exercise.id
-          }" data-action="save">Save</button>
-                <button class="button" data-exercise-id="${
-            exercise.id
-          }" data-action="cancel">Cancel</button>
-              </div>`;
-        } else {
-          listItem.innerHTML = `
-              <div class="exercise-list__item-main"><span class="exercise-list__name">${
-            exercise.name
-          }</span></div>
-              <div class="exercise-list__actions">
-                <button class="button button--icon" data-exercise-id="${
-            exercise.id
-          }" data-action="edit" aria-label="Edit"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/></svg></button>
-                <button class="button button--icon button--danger" data-exercise-id="${
-            exercise.id
-          }" data-action="delete" aria-label="Delete"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/></svg></button>
-              </div>`;
-        }
-        return listItem;
-      }
-
-      // ============================================
-      // EVENT HANDLERS
-      // ============================================
-      function handleTabClick(event) {
-        const clickedTab = event.target.closest('[role="tab"]');
-        if (! clickedTab) 
-          return;
-        
-        state.activeTab = clickedTab.id.replace('-tab', '');
-        saveState();
-        renderApplication();
-      }
-      function handleLogFormInput(event) {
-        const {name, value, id} = event.target;
-        if (name in state.logForm) {
-          state.logForm[name] = value;
+      // ===================================================================================
+      // EVENTS MODULE
+      // ===================================================================================
+      const Events = {
+        init() {
+          DOM.tabs.addEventListener('click', this.handleTabClick);
+          DOM.logForm.addEventListener('submit', this.handleLogFormSubmit);
+          DOM.logForm.addEventListener('input', this.handleLogFormInput);
+          DOM.addExerciseForm.addEventListener('submit', this.handleAddExerciseFormSubmit);
+          DOM.manageExerciseList.addEventListener('click', this.handleManageListClick);
+          DOM.newExerciseInputs.name.addEventListener('input', this.handleSettingsFilterInput);
+          DOM.clearHistoryFilterBtn.addEventListener('click', this.handleClearFilter);
+        },
+        handleTabClick(event) {
+          if (event.target.closest('[role="tab"]')) {
+            State.setActiveTab(event.target.closest('[role="tab"]').id.replace('-tab', ''));
+            State.save();
+            UI.renderTabs();
+          }
+        },
+        handleLogFormInput(event) {
+          const { name, value, id } = event.target;
+          State.setLogFormField(name, value);
           if (id === 'log-exercise') {
-            updateLogFormVisibility();
-            saveState();
-            renderHistory();
+            State.save();
+            UI.updateLogFormVisibility();
+            UI.renderHistory();
           }
-        }
-      }
-      function handleLogFormSubmit(event) {
-        event.preventDefault();
-        const exerciseId = logExerciseSelect.value;
-        if (! exerciseId) {
-          alert('Please select an exercise.');
-          return;
-        }
-        const exercise = state.exercises.find(ex => ex.id === exerciseId);
-        const newActivity = {
-          id: `act-${
-            Date.now()
-          }`,
-          exerciseId,
-          timestamp: Date.now()
-        };
-        if (exercise.category === 'Cardio') {
-          const time = logTimeInput.value;
-          if (! time || time <= 0) {
-            alert('Please enter a valid time.');
+        },
+        handleLogFormSubmit(event) {
+          event.preventDefault();
+          if (!DOM.logForm.checkValidity()) {
+            DOM.logForm.reportValidity();
             return;
           }
-          newActivity.time = parseInt(time, 10);
-        } else {
-          const reps = logRepsInput.value;
-          if (! reps || reps <= 0) {
-            alert('Please enter valid reps.');
+          const { exercises, logForm } = State.get();
+          const { EXERCISE_TYPES } = State.getConstants();
+          const exercise = exercises.find(ex => ex.id === logForm.exerciseId);
+          const newActivity = { id: State.generateId('act'), exerciseId: exercise.id, timestamp: Date.now() };
+          switch (exercise.type) {
+            case EXERCISE_TYPES.WEIGHT_REPS.id:
+              newActivity.weight = parseFloat(DOM.logInputs.weight.value || 0);
+              newActivity.reps = parseInt(DOM.logInputs.reps.value, 10);
+              break;
+            case EXERCISE_TYPES.REPS_ONLY.id:
+              newActivity.reps = parseInt(DOM.logInputs.reps.value, 10);
+              break;
+            case EXERCISE_TYPES.TIMED.id:
+              newActivity.duration = parseInt(DOM.logInputs.duration.value, 10);
+              break;
+            case EXERCISE_TYPES.DISTANCE_TIME.id:
+              newActivity.distance = parseFloat(DOM.logInputs.distance.value, 10);
+              newActivity.duration = parseInt(DOM.logInputs.duration.value, 10);
+              break;
+          }
+          State.addHistoryItem(newActivity);
+          State.resetLogForm();
+          State.save();
+          UI.render();
+          UI.announce(`${exercise.name} logged successfully.`);
+          DOM.logForm.querySelector('input:not([type=hidden])')?.focus();
+        },
+        handleAddExerciseFormSubmit(event) {
+          event.preventDefault();
+          if (!DOM.addExerciseForm.checkValidity()) {
+            DOM.addExerciseForm.reportValidity();
             return;
           }
-          newActivity.weight = parseFloat(logWeightInput.value || 0);
-          newActivity.reps = parseInt(reps, 10);
-        } state.history.push(newActivity);
-        state.logForm = {
-          ... defaultState.logForm,
-          exerciseId: state.logForm.exerciseId
-        };
-        saveState();
-        renderApplication();
-        if (exercise.category === 'Cardio') 
-          logTimeInput.focus();
-         else 
-          logWeightInput.focus();
-        
-      }
-      function handleAddExerciseFormSubmit(event) {
-        event.preventDefault();
-        const name = newExerciseNameInput.value.trim();
-        const category = newExerciseCategorySelect.value;
-        if (! name || ! category) {
-          alert('Please fill out all fields.');
-          return;
-        }
-        if (state.exercises.some(ex => ex.name.toLowerCase() === name.toLowerCase())) {
-          alert(`Exercise "${name}" already exists.`);
-          return;
-        }
-        state.exercises.push({id: `ex-${
-            Date.now()
-          }`, name, category});
-        addExerciseForm.reset();
-        state.settings.filter = '';
-        saveState();
-        renderApplication();
-      }
-      function handleManageListClick(event) {
-        const button = event.target.closest('button[data-exercise-id]');
-        if (! button) 
-          return;
-        
-        const exerciseId = button.dataset.exerciseId;
-        const action = button.dataset.action;
-        const exercise = state.exercises.find(ex => ex.id === exerciseId);
-        if (action === 'edit') {
-          state.settings.editingExerciseId = exerciseId;
-          state.settings.editingCategory = exercise.category;
-        } else if (action === 'cancel') {
-          state.settings.editingExerciseId = null;
-          state.settings.editingCategory = null;
-        } else if (action === 'save') {
-          const newName = getElementById(`edit-exercise-name-${exerciseId}`).value.trim();
-          const newCategory = getElementById(`edit-exercise-category-${exerciseId}`).value;
-          if (! newName) {
-            alert('Exercise name cannot be empty.');
+          const name = DOM.newExerciseInputs.name.value.trim();
+          if (State.get().exercises.some(ex => ex.name.toLowerCase() === name.toLowerCase())) {
+            UI.showDialog({ title: 'Duplicate Exercise', message: `An exercise with the name "${name}" already exists.`, confirmText: 'OK', showCancel: false });
             return;
           }
-          if (state.exercises.some(ex => ex.id !== exerciseId && ex.name.toLowerCase() === newName.toLowerCase())) {
-            alert(`An exercise with the name "${newName}" already exists.`);
+          const newExercise = { id: State.generateId('ex'), name, category: DOM.newExerciseInputs.category.value, type: DOM.newExerciseInputs.type.value, notes: DOM.newExerciseInputs.notes.value.trim() };
+          State.addExercise(newExercise);
+          State.setEditingExercise(null, newExercise.category);
+          State.setFilter('');
+          State.save();
+          DOM.addExerciseForm.reset();
+          DOM.newExerciseInputs.name.focus();
+          UI.render();
+          UI.announce(`${name} added successfully.`);
+        },
+        handleManageListClick(event) {
+          const button = event.target.closest('button[data-action]');
+          if (!button) {
             return;
           }
-          exercise.name = newName;
-          exercise.category = newCategory;
-          state.settings.editingExerciseId = null;
-          state.settings.editingCategory = newCategory;
-          saveState();
-        } else if (action === 'delete') {
-          if (confirm(`Are you sure you want to delete "${
-            exercise.name
-          }"? This will also remove its history.`)) {
-            state.exercises = state.exercises.filter(ex => ex.id !== exerciseId);
-            state.history = state.history.filter(h => h.exerciseId !== exerciseId);
-            saveState();
+          const { action, exerciseId } = button.dataset;
+          const exercise = State.get().exercises.find(ex => ex.id === exerciseId);
+          const actionHandlers = {
+            edit: () => {
+              State.setEditingExercise(exerciseId, exercise.category);
+              UI.renderManageExerciseList();
+            },
+            cancel: () => {
+              State.setKeepCategoryOpen(exercise.category);
+              State.setEditingExercise(null, null);
+              UI.renderManageExerciseList();
+            },
+            save: () => {
+              const newName = DOM.manageExerciseList.querySelector(`#edit-exercise-name-${exerciseId}`).value.trim();
+              const newCategory = DOM.manageExerciseList.querySelector(`#edit-exercise-category-${exerciseId}`).value;
+              if (!newName || State.get().exercises.some(ex => ex.id !== exerciseId && ex.name.toLowerCase() === newName.toLowerCase())) {
+                UI.showDialog({ title: 'Invalid Name', message: 'Exercise name cannot be empty or a duplicate.', confirmText: 'OK', showCancel: false });
+                return;
+              }
+              State.updateExercise(exerciseId, { name: newName, category: newCategory, type: DOM.manageExerciseList.querySelector(`#edit-exercise-type-${exerciseId}`).value, notes: DOM.manageExerciseList.querySelector(`#edit-exercise-notes-${exerciseId}`).value.trim() });
+              State.setKeepCategoryOpen(newCategory);
+              State.setEditingExercise(null, null);
+              State.save();
+              UI.renderManageExerciseList();
+              UI.announce(`${newName} saved successfully.`);
+            },
+            delete: () => {
+              UI.showDialog({ title: `Delete ${exercise.name}?`, message: 'This will also remove its history. This action cannot be undone.', confirmText: 'Delete' })
+                .then(confirmed => {
+                  if (confirmed) {
+                    State.deleteExercise(exerciseId);
+                    State.save();
+                    UI.render();
+                    UI.announce(`${exercise.name} deleted.`);
+                  }
+                });
+            }
+          };
+          if (actionHandlers[action]) {
+            actionHandlers[action]();
           }
+        },
+        handleSettingsFilterInput(event) {
+          State.setFilter(event.target.value);
+          State.setEditingExercise(null, null);
+          State.setKeepCategoryOpen(null); // <-- CORRECT: Reset temporary state on new filter action
+          UI.renderManageExerciseList();
+        },
+        handleClearFilter() {
+          State.setLogFormField('exerciseId', '');
+          DOM.logExerciseSelect.value = '';
+          State.save();
+          UI.updateLogFormVisibility();
+          UI.renderHistory();
         }
-        renderApplication();
-      }
-      function handleSettingsFilterInput(event) {
-        state.settings.filter = event.target.value;
-        state.settings.editingCategory = null;
-        renderApplication();
-      }
-      function handleClearFilter() {
-        state.logForm.exerciseId = '';
-        saveState();
-        renderApplication();
-      }
+      };
 
-      // ============================================
-      // INITIALIZATION
-      // ============================================
-      function initializeApplication() {
-        document.querySelector('.tabs__list').addEventListener('click', handleTabClick);
-        logForm.addEventListener('submit', handleLogFormSubmit);
-        logForm.addEventListener('input', handleLogFormInput);
-        addExerciseForm.addEventListener('submit', handleAddExerciseFormSubmit);
-        manageExerciseList.addEventListener('click', handleManageListClick);
-        newExerciseNameInput.addEventListener('input', handleSettingsFilterInput);
-        clearHistoryFilterBtn.addEventListener('click', handleClearFilter);
-        window.addEventListener('pageshow', () => renderApplication());
-        renderApplication();
-      }
+      // ===================================================================================
+      // APP INITIALIZATION
+      // ===================================================================================
+      const App = {
+        init() {
+          State.init();
+          DOM.init();
+          Events.init();
+          UI.render();
+        }
+      };
 
-      initializeApplication();
+      App.init();
     });
   </script>
-</body></html>
+</body>
+
+</html>
