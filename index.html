@@ -22,7 +22,6 @@
       --color-focus-ring: #005fcc;
       --color-dialog-backdrop: rgba(0, 0, 0, 0.5);
       --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-      --border-radius: 8px;
     }
 
     @media (prefers-color-scheme: dark) {
@@ -60,7 +59,6 @@
       background-color: var(--color-background);
       color: var(--color-text-primary);
       line-height: 1.5;
-      padding: 1rem;
     }
 
     /* --- Accessibility & Utilities --- */
@@ -79,7 +77,6 @@
     *:focus-visible {
       outline: 2px solid var(--color-focus-ring);
       outline-offset: 2px;
-      border-radius: 4px;
     }
 
     /* --- Layout --- */
@@ -95,7 +92,6 @@
     .header__title {
       font-size: 2.25rem;
       text-align: center;
-      margin-bottom: 1.5rem;
     }
 
     .tabs__list {
@@ -104,7 +100,12 @@
       border-bottom: 2px solid var(--color-border);
     }
 
+    .tabs__item {
+      flex: 1;
+    }
+
     .tabs__button {
+      width: 100%;
       padding: 0.75rem 1.5rem;
       font-size: 1rem;
       font-weight: 600;
@@ -136,7 +137,6 @@
       background-color: var(--color-surface);
       padding: 1.5rem;
       border: 1px solid var(--color-border);
-      border-radius: 0 0 var(--border-radius) var(--border-radius);
       box-shadow: none;
     }
 
@@ -161,7 +161,6 @@
       padding: 0.75rem 1.5rem;
       font-size: 1rem;
       font-weight: 600;
-      border-radius: var(--border-radius);
       border: none;
       cursor: pointer;
       transition: background-color 150ms ease;
@@ -282,7 +281,6 @@
       font-family: inherit;
       background-color: var(--color-input-bg);
       border: 1px solid var(--color-border);
-      border-radius: var(--border-radius);
       color: var(--color-text-primary);
       -webkit-appearance: none;
       -moz-appearance: none;
@@ -327,7 +325,6 @@
 
     .collapsible-list details {
       border: 1px solid var(--color-border);
-      border-radius: var(--border-radius);
       overflow: hidden;
     }
 
@@ -384,7 +381,6 @@
       background-color: var(--color-surface);
       padding: 0.5rem 0.5rem 0.5rem 1rem;
       border: 1px solid var(--color-border);
-      border-radius: var(--border-radius);
       gap: 1rem;
     }
 
@@ -417,7 +413,6 @@
       background-color: var(--color-surface);
       padding: 1rem;
       border: 1px solid var(--color-border);
-      border-radius: var(--border-radius);
       gap: 0.5rem 1rem;
       flex-wrap: wrap;
     }
@@ -448,7 +443,6 @@
       max-width: 500px;
       width: 90%;
       border: 1px solid var(--color-border);
-      border-radius: var(--border-radius);
       background-color: var(--color-surface);
       color: var(--color-text-primary);
       box-shadow: var(--shadow-md);
@@ -484,7 +478,6 @@
       padding: 0.75rem;
       background-color: var(--color-input-bg);
       border: 1px solid var(--color-border);
-      border-radius: var(--border-radius);
     }
 
     .smart-suggestions__text {
@@ -536,14 +529,36 @@
       font-weight: 600;
       text-align: left;
       box-sizing: border-box;
+      gap: 1rem;
     }
 
     .rest-timer__toggle:hover {
       background-color: var(--color-background);
     }
 
-    .rest-timer__toggle::before {
+    .rest-timer__toggle-text {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-grow: 1;
+    }
+
+    .rest-timer__toggle-label::after {
       content: 'Rest Timer';
+    }
+
+    .rest-timer__toggle-time {
+      font-variant-numeric: tabular-nums;
+      color: var(--color-primary);
+      font-weight: 700;
+    }
+
+    .rest-timer.collapsed .rest-timer__toggle-time {
+      display: inline;
+    }
+
+    .rest-timer.expanded .rest-timer__toggle-time {
+      display: none;
     }
 
     .rest-timer.collapsed .rest-timer__content {
@@ -636,53 +651,6 @@
       font-size: 0.875rem;
     }
 
-    .stats-card {
-      background-color: var(--color-input-bg);
-      border: 1px solid var(--color-border);
-      border-radius: var(--border-radius);
-      padding: 1rem;
-      margin-bottom: 1rem;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 1rem;
-      margin-top: 0.75rem;
-    }
-
-    .stat-item {
-      text-align: center;
-    }
-
-    .stat-item__value {
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--color-primary);
-    }
-
-    .stat-item__label {
-      font-size: 0.875rem;
-      color: var(--color-text-secondary);
-      margin-top: 0.25rem;
-    }
-
-    .muscle-groups {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.5rem;
-      margin-top: 0.75rem;
-    }
-
-    .muscle-group-badge {
-      padding: 0.25rem 0.75rem;
-      background-color: var(--color-primary);
-      color: white;
-      border-radius: 9999px;
-      font-size: 0.875rem;
-      font-weight: 500;
-    }
-
     @media (max-width: 640px) {
       .rest-timer.collapsed .rest-timer__toggle {
         padding: 0.875rem 1rem;
@@ -757,6 +725,10 @@
         <!-- Rest Timer -->
         <div id="rest-timer" class="rest-timer collapsed">
           <button class="rest-timer__toggle" id="rest-timer-toggle" aria-label="Toggle rest timer" aria-expanded="false">
+            <span class="rest-timer__toggle-text">
+              <span class="rest-timer__toggle-label"></span>
+              <span class="rest-timer__toggle-time" id="rest-timer-toggle-display">1:00</span>
+            </span>
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
               <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/>
             </svg>
@@ -777,15 +749,7 @@
         <div class="card" id="history-card">
           <div class="card__title-container">
             <h2 class="card__title" id="history-title">History</h2>
-            <button id="clear-history-filter" class="button button--link" hidden>Clear Filter</button>
-          </div>
-          <div id="stats-summary" class="stats-card" hidden>
-            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem;">Workout Statistics</h3>
-            <div class="stats-grid" id="stats-grid"></div>
-            <div id="muscle-groups-container" hidden>
-              <p style="font-size: 0.875rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem;">Muscle Groups Trained:</p>
-              <div class="muscle-groups" id="muscle-groups-list"></div>
-            </div>
+            <button id="clear-history-filter" class="button button--icon" aria-label="Clear filter" hidden>×</button>
           </div>
           <div id="history-container" role="feed" aria-busy="false">
             <div id="history-list" class="collapsible-list"></div>
@@ -962,10 +926,6 @@
           this.logGroups = { weight: get('log-weight-group'), reps: get('log-reps-group'), distance: get('log-distance-group'), duration: get('log-duration-group') };
           this.logInputs = { weight: get('log-weight'), reps: get('log-reps'), distance: get('log-distance'), duration: get('log-duration') };
           this.logDurationLabel = this.logGroups.duration.querySelector('label');
-          this.statsSummary = get('stats-summary');
-          this.statsGrid = get('stats-grid');
-          this.muscleGroupsContainer = get('muscle-groups-container');
-          this.muscleGroupsList = get('muscle-groups-list');
           this.historyContainer = get('history-container');
           this.historyList = get('history-list');
           this.historyTitle = get('history-title');
@@ -982,6 +942,7 @@
           this.dialogCancelBtn = get('dialog-cancel-btn');
           this.restTimer = get('rest-timer');
           this.restTimerToggle = get('rest-timer-toggle');
+          this.restTimerToggleDisplay = get('rest-timer-toggle-display');
           this.restTimerDisplay = get('rest-timer-display');
           this.restTimerDecrease = get('rest-timer-decrease');
           this.restTimerIncrease = get('rest-timer-increase');
@@ -1146,9 +1107,6 @@
             DOM.clearHistoryFilterBtn.hidden = true;
           }
 
-          // Render statistics
-          this.renderStatistics(historyToRender, exercises);
-
           DOM.historyList.innerHTML = '';
           const sortedHistory = [...historyToRender].sort((a, b) => b.timestamp - a.timestamp);
           DOM.historyEmptyState.hidden = sortedHistory.length > 0;
@@ -1196,70 +1154,6 @@
             details.append(summary, innerList);
             DOM.historyList.appendChild(details);
           });
-        },
-        renderStatistics(historyToRender, exercises) {
-          if (historyToRender.length === 0) {
-            DOM.statsSummary.hidden = true;
-            return;
-          }
-
-          DOM.statsSummary.hidden = false;
-
-          // Calculate stats
-          const totalWorkouts = historyToRender.length;
-          const uniqueExercises = new Set(historyToRender.map(h => h.exerciseId)).size;
-          
-          // Calculate total volume (for weight-based exercises)
-          let totalVolume = 0;
-          historyToRender.forEach(item => {
-            if (item.hasOwnProperty('weight') && item.hasOwnProperty('reps')) {
-              totalVolume += (item.weight || 0) * item.reps;
-            }
-          });
-
-          // Get date range
-          const dates = historyToRender.map(h => h.timestamp).sort((a, b) => a - b);
-          const daySpan = Math.ceil((dates[dates.length - 1] - dates[0]) / (1000 * 60 * 60 * 24)) + 1;
-
-          // Render stats
-          DOM.statsGrid.innerHTML = `
-            <div class="stat-item">
-              <div class="stat-item__value">${totalWorkouts}</div>
-              <div class="stat-item__label">Total Sets</div>
-            </div>
-            <div class="stat-item">
-              <div class="stat-item__value">${uniqueExercises}</div>
-              <div class="stat-item__label">Exercises</div>
-            </div>
-            ${totalVolume > 0 ? `
-            <div class="stat-item">
-              <div class="stat-item__value">${Math.round(totalVolume).toLocaleString()}</div>
-              <div class="stat-item__label">Total kg Lifted</div>
-            </div>` : ''}
-            <div class="stat-item">
-              <div class="stat-item__value">${daySpan}</div>
-              <div class="stat-item__label">Day${daySpan !== 1 ? 's' : ''} Tracked</div>
-            </div>
-          `;
-
-          // Render muscle groups
-          const muscleGroups = new Set();
-          historyToRender.forEach(item => {
-            const exercise = exercises.find(ex => ex.id === item.exerciseId);
-            if (exercise && exercise.category !== 'Other') {
-              muscleGroups.add(exercise.category);
-            }
-          });
-
-          if (muscleGroups.size > 0) {
-            DOM.muscleGroupsContainer.hidden = false;
-            DOM.muscleGroupsList.innerHTML = Array.from(muscleGroups)
-              .sort()
-              .map(group => `<span class="muscle-group-badge">${group}</span>`)
-              .join('');
-          } else {
-            DOM.muscleGroupsContainer.hidden = true;
-          }
         },
         renderManageExerciseList() {
           const { exercises, settings } = State.get();
@@ -1625,7 +1519,10 @@
           
           const minutes = Math.floor(remainingSeconds / 60);
           const seconds = remainingSeconds % 60;
-          DOM.restTimerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          
+          DOM.restTimerDisplay.textContent = timeString;
+          DOM.restTimerToggleDisplay.textContent = timeString;
           
           // Visual feedback
           DOM.restTimerDisplay.classList.remove('warning', 'complete');
