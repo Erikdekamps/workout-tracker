@@ -457,6 +457,77 @@
       gap: 0.75rem;
     }
 
+    .card__header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1rem;
+    }
+
+    .card__header .card__title {
+      margin: 0;
+    }
+
+    .dropdown {
+      position: relative;
+      display: inline-block;
+    }
+
+    .dropdown__toggle {
+      background: none;
+      border: none;
+      padding: 0.5rem;
+      cursor: pointer;
+      color: var(--color-text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background-color 0.2s;
+    }
+
+    .dropdown__toggle:hover {
+      background-color: var(--color-surface);
+    }
+
+    .dropdown__menu {
+      position: absolute;
+      right: 0;
+      top: 100%;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      min-width: 200px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 10000;
+      margin-top: 0.25rem;
+      display: none;
+    }
+
+    .dropdown__menu.show {
+      display: block;
+    }
+
+    .dropdown__item {
+      display: block;
+      width: 100%;
+      padding: 0.75rem 1rem;
+      text-align: left;
+      border: none;
+      background: none;
+      color: var(--color-text);
+      cursor: pointer;
+      transition: background-color 0.2s;
+      font-size: 0.875rem;
+    }
+
+    .dropdown__item:hover {
+      background-color: var(--color-surface);
+    }
+
+    .dropdown__item--danger:hover {
+      background-color: #fee;
+      color: #c00;
+    }
+
     /* --- Quality of Life Features --- */
     .rest-timer {
       position: relative;
@@ -748,7 +819,25 @@
           </form>
         </div>
         <div class="card">
-          <h2 class="card__title">Manage Exercises</h2>
+          <div class="card__header">
+            <h2 class="card__title">Manage Exercises</h2>
+            <div class="dropdown">
+              <button class="dropdown__toggle" id="manage-exercises-menu-toggle" aria-label="Exercise options menu" aria-expanded="false">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                  <path d="M3 9.5a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3m5 0a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3"/>
+                </svg>
+              </button>
+              <div class="dropdown__menu" id="manage-exercises-menu">
+                <button class="dropdown__item dropdown__item--danger" id="reset-exercises-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 0.5rem; vertical-align: middle;">
+                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+                  </svg>
+                  Reset to Defaults
+                </button>
+              </div>
+            </div>
+          </div>
           <div id="manage-exercise-list" class="collapsible-list"></div>
           <p id="manage-exercise-empty-state" hidden>No exercises match your filter.</p>
         </div>
@@ -1216,6 +1305,9 @@
           this.restTimerIncrease = get('rest-timer-increase');
           this.restTimerPause = get('rest-timer-pause');
           this.restTimerReset = get('rest-timer-reset');
+          this.manageExercisesMenuToggle = get('manage-exercises-menu-toggle');
+          this.manageExercisesMenu = get('manage-exercises-menu');
+          this.resetExercisesBtn = get('reset-exercises-btn');
         }
       };
 
@@ -1556,6 +1648,9 @@
           DOM.addExerciseForm.addEventListener('submit', this.handleAddExerciseFormSubmit.bind(this));
           DOM.manageExerciseList.addEventListener('click', this.handleManageListClick.bind(this));
           DOM.newExerciseInputs.name.addEventListener('input', this.handleSettingsFilterInput.bind(this));
+          DOM.manageExercisesMenuToggle.addEventListener('click', this.handleMenuToggle.bind(this));
+          DOM.resetExercisesBtn.addEventListener('click', this.handleResetExercises.bind(this));
+          document.addEventListener('click', this.handleOutsideClick.bind(this));
           this.updateRestTimerDisplay();
           this.restoreRestTimerState();
           this.resumeRestTimerIfRunning();
@@ -1926,6 +2021,43 @@
           State.setEditingExercise(null, null);
           State.setKeepCategoryOpen(null); // <-- CORRECT: Reset temporary state on new filter action
           UI.renderManageExerciseList();
+        },
+        handleMenuToggle(event) {
+          event.stopPropagation();
+          const isExpanded = DOM.manageExercisesMenu.classList.contains('show');
+          DOM.manageExercisesMenu.classList.toggle('show');
+          DOM.manageExercisesMenuToggle.setAttribute('aria-expanded', !isExpanded);
+        },
+        handleOutsideClick(event) {
+          if (!event.target.closest('.dropdown')) {
+            DOM.manageExercisesMenu.classList.remove('show');
+            DOM.manageExercisesMenuToggle.setAttribute('aria-expanded', 'false');
+          }
+        },
+        handleResetExercises() {
+          DOM.manageExercisesMenu.classList.remove('show');
+          DOM.manageExercisesMenuToggle.setAttribute('aria-expanded', 'false');
+          
+          UI.showDialog({
+            title: 'Reset to Default Exercises?',
+            message: 'This will replace all current exercises with the default set. All custom exercises and history will be permanently deleted. This cannot be undone.',
+            confirmText: 'Reset'
+          }).then(confirmed => {
+            if (confirmed) {
+              // Clear exercises and history
+              State.get().exercises = [];
+              State.get().history = [];
+              
+              // Reload the initial state to get default exercises
+              const initialState = State._getInitialState(1);
+              State.get().exercises = initialState.exercises;
+              State.get()._nextId = initialState._nextId;
+              
+              State.save();
+              UI.render();
+              UI.announce('Exercises reset to defaults successfully.');
+            }
+          });
         }
       };
 
