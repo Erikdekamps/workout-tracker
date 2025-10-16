@@ -477,6 +477,226 @@
       justify-content: flex-end;
       gap: 0.75rem;
     }
+
+    /* --- Quality of Life Features --- */
+    .smart-suggestions {
+      margin-top: 0.75rem;
+      padding: 0.75rem;
+      background-color: var(--color-input-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius);
+    }
+
+    .smart-suggestions__text {
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+      font-style: italic;
+    }
+
+    .rest-timer {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      background-color: var(--color-surface);
+      border: 2px solid var(--color-primary);
+      border-radius: var(--border-radius);
+      box-shadow: var(--shadow-md);
+      z-index: 1000;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .rest-timer.collapsed {
+      width: 60px;
+      height: 60px;
+      cursor: pointer;
+    }
+
+    .rest-timer.expanded {
+      width: 250px;
+      padding: 1rem;
+    }
+
+    .rest-timer__toggle {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 60px;
+      height: 60px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--color-primary);
+      transition: transform 0.3s ease;
+    }
+
+    .rest-timer.collapsed .rest-timer__content {
+      display: none;
+      opacity: 0;
+    }
+
+    .rest-timer.expanded .rest-timer__content {
+      display: block;
+      opacity: 1;
+      animation: slideIn 0.3s ease;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateY(10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .rest-timer.expanded .rest-timer__toggle {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      width: 32px;
+      height: 32px;
+    }
+
+    .rest-timer__toggle svg {
+      transition: transform 0.3s ease;
+      width: 24px;
+      height: 24px;
+    }
+
+    .rest-timer.collapsed .rest-timer__toggle svg {
+      transform: rotate(0deg);
+    }
+
+    .rest-timer.expanded .rest-timer__toggle svg {
+      transform: rotate(180deg);
+    }
+
+    .rest-timer__content {
+      padding-top: 2rem;
+      transition: opacity 0.3s ease;
+    }
+
+    .rest-timer__display-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .rest-timer__adjust-btn {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .rest-timer__display {
+      font-size: 2rem;
+      font-weight: 700;
+      text-align: center;
+      color: var(--color-primary);
+      font-variant-numeric: tabular-nums;
+      min-width: 100px;
+    }
+
+    .rest-timer__display.warning {
+      color: #f59e0b;
+    }
+
+    .rest-timer__display.complete {
+      color: #10b981;
+    }
+
+    .rest-timer__controls {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .rest-timer__controls .button {
+      flex: 1;
+      padding: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .stats-card {
+      background-color: var(--color-input-bg);
+      border: 1px solid var(--color-border);
+      border-radius: var(--border-radius);
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-top: 0.75rem;
+    }
+
+    .stat-item {
+      text-align: center;
+    }
+
+    .stat-item__value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--color-primary);
+    }
+
+    .stat-item__label {
+      font-size: 0.875rem;
+      color: var(--color-text-secondary);
+      margin-top: 0.25rem;
+    }
+
+    .muscle-groups {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.75rem;
+    }
+
+    .muscle-group-badge {
+      padding: 0.25rem 0.75rem;
+      background-color: var(--color-primary);
+      color: white;
+      border-radius: 9999px;
+      font-size: 0.875rem;
+      font-weight: 500;
+    }
+
+    @media (max-width: 640px) {
+      .rest-timer.collapsed {
+        width: 50px;
+        height: 50px;
+      }
+
+      .rest-timer__toggle {
+        width: 50px;
+        height: 50px;
+      }
+
+      .rest-timer__toggle svg {
+        width: 20px;
+        height: 20px;
+      }
+
+      .rest-timer.expanded {
+        bottom: 0.5rem;
+        right: 0.5rem;
+        left: 0.5rem;
+        width: auto;
+      }
+    }
   </style>
 </head>
 
@@ -505,6 +725,9 @@
             <div class="form-group">
               <label for="log-exercise" class="form-group__label">Exercise</label><select id="log-exercise"
                 class="input" name="exerciseId" required></select>
+              <div class="smart-suggestions" id="log-suggestions" hidden>
+                <p id="last-workout-info" class="smart-suggestions__text"></p>
+              </div>
             </div>
             <div class="form-group" id="log-weight-group" hidden>
               <label for="log-weight" class="form-group__label">Weight (kg)</label><input type="number" id="log-weight"
@@ -529,6 +752,14 @@
           <div class="card__title-container">
             <h2 class="card__title" id="history-title">History</h2>
             <button id="clear-history-filter" class="button button--link" hidden>Clear Filter</button>
+          </div>
+          <div id="stats-summary" class="stats-card" hidden>
+            <h3 style="font-size: 1rem; font-weight: 600; margin-bottom: 0.5rem;">Workout Statistics</h3>
+            <div class="stats-grid" id="stats-grid"></div>
+            <div id="muscle-groups-container" hidden>
+              <p style="font-size: 0.875rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.5rem;">Muscle Groups Trained:</p>
+              <div class="muscle-groups" id="muscle-groups-list"></div>
+            </div>
           </div>
           <div id="history-container" role="feed" aria-busy="false">
             <div id="history-list" class="collapsible-list"></div>
@@ -577,6 +808,25 @@
     </div>
   </dialog>
 
+  <div id="rest-timer" class="rest-timer collapsed">
+    <button class="rest-timer__toggle" id="rest-timer-toggle" aria-label="Toggle rest timer" aria-expanded="false">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 16 16">
+        <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708"/>
+      </svg>
+    </button>
+    <div class="rest-timer__content">
+      <div class="rest-timer__display-container">
+        <button id="rest-timer-decrease" class="button button--secondary rest-timer__adjust-btn" aria-label="Decrease time by 10 seconds">−</button>
+        <div class="rest-timer__display" id="rest-timer-display">1:00</div>
+        <button id="rest-timer-increase" class="button button--secondary rest-timer__adjust-btn" aria-label="Increase time by 10 seconds">+</button>
+      </div>
+      <div class="rest-timer__controls">
+        <button id="rest-timer-pause" class="button button--secondary">Start</button>
+        <button id="rest-timer-reset" class="button button--secondary">Reset</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     document.addEventListener('DOMContentLoaded', () => {
       // ===================================================================================
@@ -587,7 +837,8 @@
         _defaults: {
           activeTab: 'log', exercises: [], history: [],
           logForm: { exerciseId: '', weight: '', reps: '', distance: '', duration: '' },
-          settings: { filter: '', editingExerciseId: null, editingCategory: null, keepCategoryOpen: null }
+          settings: { filter: '', editingExerciseId: null, editingCategory: null, keepCategoryOpen: null },
+          restTimer: { running: false, paused: false, startTime: 0, remaining: 60, duration: 60, expanded: false }
         },
         _constants: {
           STORAGE_KEY: 'workoutTrackerState_v5',
@@ -616,7 +867,14 @@
             ].filter(Boolean);
             const nextId = (allIds.length > 0 ? Math.max(...allIds) : 0) + 1;
             const initialState = this._getInitialState(nextId);
-            return { ...initialState, ...parsedState };
+            const mergedState = { ...initialState, ...parsedState };
+            
+            // Ensure restTimer has remaining property initialized
+            if (mergedState.restTimer && !mergedState.restTimer.hasOwnProperty('remaining')) {
+              mergedState.restTimer.remaining = mergedState.restTimer.duration || 60;
+            }
+            
+            return mergedState;
           } catch (error) {
             console.error('Failed to load state, falling back to defaults.', error);
             return this._getInitialState();
@@ -626,7 +884,8 @@
         save() {
           const stateToSave = {
             exercises: this._data.exercises, history: this._data.history,
-            activeTab: this._data.activeTab, logForm: { exerciseId: this._data.logForm.exerciseId }
+            activeTab: this._data.activeTab, logForm: { exerciseId: this._data.logForm.exerciseId },
+            restTimer: this._data.restTimer
           };
           localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify(stateToSave));
         },
@@ -675,7 +934,9 @@
           this._data.settings.editingExerciseId = id;
           this._data.settings.editingCategory = category;
         },
-        setKeepCategoryOpen(category) { this._data.settings.keepCategoryOpen = category; }
+        setKeepCategoryOpen(category) { this._data.settings.keepCategoryOpen = category; },
+        setRestTimer(data) { Object.assign(this._data.restTimer, data); },
+        getRestTimer() { return this._data.restTimer; }
       };
 
       // ===================================================================================
@@ -688,9 +949,15 @@
           this.tabs = document.querySelector('.tabs__list');
           this.logForm = get('log-form');
           this.logExerciseSelect = get('log-exercise');
+          this.logSuggestions = get('log-suggestions');
+          this.lastWorkoutInfo = get('last-workout-info');
           this.logGroups = { weight: get('log-weight-group'), reps: get('log-reps-group'), distance: get('log-distance-group'), duration: get('log-duration-group') };
           this.logInputs = { weight: get('log-weight'), reps: get('log-reps'), distance: get('log-distance'), duration: get('log-duration') };
           this.logDurationLabel = this.logGroups.duration.querySelector('label');
+          this.statsSummary = get('stats-summary');
+          this.statsGrid = get('stats-grid');
+          this.muscleGroupsContainer = get('muscle-groups-container');
+          this.muscleGroupsList = get('muscle-groups-list');
           this.historyContainer = get('history-container');
           this.historyList = get('history-list');
           this.historyTitle = get('history-title');
@@ -705,6 +972,13 @@
           this.dialogMessage = get('dialog-message');
           this.dialogConfirmBtn = get('dialog-confirm-btn');
           this.dialogCancelBtn = get('dialog-cancel-btn');
+          this.restTimer = get('rest-timer');
+          this.restTimerToggle = get('rest-timer-toggle');
+          this.restTimerDisplay = get('rest-timer-display');
+          this.restTimerDecrease = get('rest-timer-decrease');
+          this.restTimerIncrease = get('rest-timer-increase');
+          this.restTimerPause = get('rest-timer-pause');
+          this.restTimerReset = get('rest-timer-reset');
         }
       };
 
@@ -803,6 +1077,52 @@
             }
           });
           this.updateLogFormVisibility();
+          this.updateSmartSuggestions();
+        },
+        updateSmartSuggestions() {
+          const { exercises, history, logForm } = State.get();
+          const exerciseId = logForm.exerciseId;
+          
+          if (!exerciseId) {
+            DOM.logSuggestions.hidden = true;
+            return;
+          }
+
+          const exercise = exercises.find(ex => ex.id === exerciseId);
+          const recentActivities = history
+            .filter(item => item.exerciseId === exerciseId)
+            .sort((a, b) => b.timestamp - a.timestamp);
+
+          if (recentActivities.length === 0) {
+            DOM.logSuggestions.hidden = true;
+            return;
+          }
+
+          DOM.logSuggestions.hidden = false;
+          const lastActivity = recentActivities[0];
+          
+          let infoText = 'Last: ';
+          if (lastActivity.hasOwnProperty('weight')) {
+            infoText += `${lastActivity.weight} kg × ${lastActivity.reps} reps`;
+          } else if (lastActivity.hasOwnProperty('distance')) {
+            infoText += `${lastActivity.distance} km in ${lastActivity.duration} min`;
+          } else if (lastActivity.hasOwnProperty('reps')) {
+            infoText += `${lastActivity.reps} reps`;
+          } else if (lastActivity.hasOwnProperty('duration')) {
+            infoText += `${lastActivity.duration} seconds`;
+          }
+          
+          const timeSince = Date.now() - lastActivity.timestamp;
+          const daysSince = Math.floor(timeSince / (1000 * 60 * 60 * 24));
+          if (daysSince === 0) {
+            infoText += ' (today)';
+          } else if (daysSince === 1) {
+            infoText += ' (yesterday)';
+          } else if (daysSince < 7) {
+            infoText += ` (${daysSince} days ago)`;
+          }
+
+          DOM.lastWorkoutInfo.textContent = infoText;
         },
         renderHistory() {
           const { exercises, history, logForm } = State.get();
@@ -817,6 +1137,10 @@
             DOM.historyTitle.textContent = 'History';
             DOM.clearHistoryFilterBtn.hidden = true;
           }
+
+          // Render statistics
+          this.renderStatistics(historyToRender, exercises);
+
           DOM.historyList.innerHTML = '';
           const sortedHistory = [...historyToRender].sort((a, b) => b.timestamp - a.timestamp);
           DOM.historyEmptyState.hidden = sortedHistory.length > 0;
@@ -864,6 +1188,70 @@
             details.append(summary, innerList);
             DOM.historyList.appendChild(details);
           });
+        },
+        renderStatistics(historyToRender, exercises) {
+          if (historyToRender.length === 0) {
+            DOM.statsSummary.hidden = true;
+            return;
+          }
+
+          DOM.statsSummary.hidden = false;
+
+          // Calculate stats
+          const totalWorkouts = historyToRender.length;
+          const uniqueExercises = new Set(historyToRender.map(h => h.exerciseId)).size;
+          
+          // Calculate total volume (for weight-based exercises)
+          let totalVolume = 0;
+          historyToRender.forEach(item => {
+            if (item.hasOwnProperty('weight') && item.hasOwnProperty('reps')) {
+              totalVolume += (item.weight || 0) * item.reps;
+            }
+          });
+
+          // Get date range
+          const dates = historyToRender.map(h => h.timestamp).sort((a, b) => a - b);
+          const daySpan = Math.ceil((dates[dates.length - 1] - dates[0]) / (1000 * 60 * 60 * 24)) + 1;
+
+          // Render stats
+          DOM.statsGrid.innerHTML = `
+            <div class="stat-item">
+              <div class="stat-item__value">${totalWorkouts}</div>
+              <div class="stat-item__label">Total Sets</div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-item__value">${uniqueExercises}</div>
+              <div class="stat-item__label">Exercises</div>
+            </div>
+            ${totalVolume > 0 ? `
+            <div class="stat-item">
+              <div class="stat-item__value">${Math.round(totalVolume).toLocaleString()}</div>
+              <div class="stat-item__label">Total kg Lifted</div>
+            </div>` : ''}
+            <div class="stat-item">
+              <div class="stat-item__value">${daySpan}</div>
+              <div class="stat-item__label">Day${daySpan !== 1 ? 's' : ''} Tracked</div>
+            </div>
+          `;
+
+          // Render muscle groups
+          const muscleGroups = new Set();
+          historyToRender.forEach(item => {
+            const exercise = exercises.find(ex => ex.id === item.exerciseId);
+            if (exercise && exercise.category !== 'Other') {
+              muscleGroups.add(exercise.category);
+            }
+          });
+
+          if (muscleGroups.size > 0) {
+            DOM.muscleGroupsContainer.hidden = false;
+            DOM.muscleGroupsList.innerHTML = Array.from(muscleGroups)
+              .sort()
+              .map(group => `<span class="muscle-group-badge">${group}</span>`)
+              .join('');
+          } else {
+            DOM.muscleGroupsContainer.hidden = true;
+          }
         },
         renderManageExerciseList() {
           const { exercises, settings } = State.get();
@@ -1008,14 +1396,264 @@
       // EVENTS MODULE
       // ===================================================================================
       const Events = {
+        restTimerInterval: null,
+        
         init() {
-          DOM.tabs.addEventListener('click', this.handleTabClick);
-          DOM.logForm.addEventListener('submit', this.handleLogFormSubmit);
-          DOM.logForm.addEventListener('input', this.handleLogFormInput);
-          DOM.addExerciseForm.addEventListener('submit', this.handleAddExerciseFormSubmit);
-          DOM.manageExerciseList.addEventListener('click', this.handleManageListClick);
-          DOM.newExerciseInputs.name.addEventListener('input', this.handleSettingsFilterInput);
-          DOM.clearHistoryFilterBtn.addEventListener('click', this.handleClearFilter);
+          DOM.tabs.addEventListener('click', this.handleTabClick.bind(this));
+          DOM.logForm.addEventListener('submit', this.handleLogFormSubmit.bind(this));
+          DOM.logForm.addEventListener('input', this.handleLogFormInput.bind(this));
+          DOM.restTimerToggle.addEventListener('click', this.handleRestTimerToggle.bind(this));
+          DOM.restTimerDecrease.addEventListener('click', this.handleRestTimerDecrease.bind(this));
+          DOM.restTimerIncrease.addEventListener('click', this.handleRestTimerIncrease.bind(this));
+          DOM.restTimerPause.addEventListener('click', this.handleRestTimerPause.bind(this));
+          DOM.restTimerReset.addEventListener('click', this.handleRestTimerReset.bind(this));
+          DOM.addExerciseForm.addEventListener('submit', this.handleAddExerciseFormSubmit.bind(this));
+          DOM.manageExerciseList.addEventListener('click', this.handleManageListClick.bind(this));
+          DOM.newExerciseInputs.name.addEventListener('input', this.handleSettingsFilterInput.bind(this));
+          DOM.clearHistoryFilterBtn.addEventListener('click', this.handleClearFilter.bind(this));
+          this.updateRestTimerDisplay();
+          this.restoreRestTimerState();
+          this.resumeRestTimerIfRunning();
+        },
+        restoreRestTimerState() {
+          const timer = State.getRestTimer();
+          // Restore expanded/collapsed state
+          if (timer.expanded) {
+            DOM.restTimer.classList.remove('collapsed');
+            DOM.restTimer.classList.add('expanded');
+            DOM.restTimerToggle.setAttribute('aria-expanded', 'true');
+          } else {
+            DOM.restTimer.classList.remove('expanded');
+            DOM.restTimer.classList.add('collapsed');
+            DOM.restTimerToggle.setAttribute('aria-expanded', 'false');
+          }
+        },
+        resumeRestTimerIfRunning() {
+          const timer = State.getRestTimer();
+          if (timer.running && !timer.paused) {
+            // Calculate how much time has passed since the timer was running
+            const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
+            const remaining = Math.max(0, timer.remaining - elapsed);
+            
+            if (remaining > 0) {
+              // Timer is still running, resume it
+              State.setRestTimer({
+                startTime: Date.now(),
+                remaining: remaining
+              });
+              DOM.restTimerPause.textContent = 'Pause';
+              this.startRestTimerInterval();
+            } else {
+              // Timer expired while page was closed
+              this.handleRestTimerComplete();
+            }
+          } else if (timer.paused) {
+            DOM.restTimerPause.textContent = 'Resume';
+          }
+          this.updateRestTimerDisplay();
+        },
+        handleRestTimerToggle() {
+          const timer = State.getRestTimer();
+          const isExpanded = DOM.restTimer.classList.contains('expanded');
+          if (isExpanded) {
+            DOM.restTimer.classList.remove('expanded');
+            DOM.restTimer.classList.add('collapsed');
+            DOM.restTimerToggle.setAttribute('aria-expanded', 'false');
+            State.setRestTimer({ expanded: false });
+          } else {
+            DOM.restTimer.classList.remove('collapsed');
+            DOM.restTimer.classList.add('expanded');
+            DOM.restTimerToggle.setAttribute('aria-expanded', 'true');
+            State.setRestTimer({ expanded: true });
+          }
+          State.save();
+        },
+        handleRestTimerDecrease() {
+          const timer = State.getRestTimer();
+          
+          if (timer.running && !timer.paused) {
+            // Timer is running - subtract 10 seconds from remaining time
+            const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
+            const currentRemaining = Math.max(0, timer.remaining - elapsed);
+            const newRemaining = Math.max(0, currentRemaining - 10);
+            
+            State.setRestTimer({ 
+              startTime: Date.now(),
+              remaining: newRemaining
+            });
+            State.save();
+            this.updateRestTimerDisplay();
+            UI.announce(`10 seconds removed`);
+          } else {
+            // Timer not running - change duration
+            const newDuration = Math.max(10, timer.duration - 10);
+            State.setRestTimer({ 
+              duration: newDuration,
+              remaining: newDuration
+            });
+            State.save();
+            this.updateRestTimerDisplay();
+            UI.announce(`Rest duration set to ${newDuration} seconds`);
+          }
+        },
+        handleRestTimerIncrease() {
+          const timer = State.getRestTimer();
+          
+          if (timer.running && !timer.paused) {
+            // Timer is running - add 10 seconds to remaining time
+            const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
+            const currentRemaining = Math.max(0, timer.remaining - elapsed);
+            const newRemaining = Math.min(600, currentRemaining + 10);
+            
+            State.setRestTimer({ 
+              startTime: Date.now(),
+              remaining: newRemaining
+            });
+            State.save();
+            this.updateRestTimerDisplay();
+            UI.announce(`10 seconds added`);
+          } else {
+            // Timer not running - change duration
+            const newDuration = Math.min(600, timer.duration + 10);
+            State.setRestTimer({ 
+              duration: newDuration,
+              remaining: newDuration
+            });
+            State.save();
+            this.updateRestTimerDisplay();
+            UI.announce(`Rest duration set to ${newDuration} seconds`);
+          }
+        },
+        handleRestTimerPause() {
+          const timer = State.getRestTimer();
+          if (!timer.running) {
+            // Start timer
+            const startingRemaining = timer.remaining || timer.duration;
+            State.setRestTimer({
+              running: true,
+              paused: false,
+              startTime: Date.now(),
+              remaining: startingRemaining
+            });
+            DOM.restTimerPause.textContent = 'Pause';
+            State.save();
+            this.startRestTimerInterval();
+            UI.announce('Timer started');
+          } else if (timer.paused) {
+            // Resume
+            State.setRestTimer({
+              paused: false,
+              startTime: Date.now()
+            });
+            DOM.restTimerPause.textContent = 'Pause';
+            State.save();
+            this.startRestTimerInterval();
+            UI.announce('Timer resumed');
+          } else {
+            // Pause
+            const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
+            const remaining = Math.max(0, timer.remaining - elapsed);
+            State.setRestTimer({
+              paused: true,
+              remaining: remaining
+            });
+            DOM.restTimerPause.textContent = 'Resume';
+            State.save();
+            if (this.restTimerInterval) {
+              clearInterval(this.restTimerInterval);
+            }
+            this.updateRestTimerDisplay();
+            UI.announce('Timer paused');
+          }
+        },
+        handleRestTimerReset() {
+          const timer = State.getRestTimer();
+          State.setRestTimer({
+            running: false,
+            paused: false,
+            remaining: timer.duration
+          });
+          DOM.restTimerPause.textContent = 'Start';
+          DOM.restTimerDisplay.classList.remove('warning', 'complete');
+          if (this.restTimerInterval) {
+            clearInterval(this.restTimerInterval);
+          }
+          this.updateRestTimerDisplay();
+          UI.announce('Timer reset');
+        },
+        startRestTimerInterval() {
+          if (this.restTimerInterval) {
+            clearInterval(this.restTimerInterval);
+          }
+          // Update immediately
+          this.updateRestTimerDisplay();
+          // Then update every 100ms for smooth countdown
+          this.restTimerInterval = setInterval(() => {
+            this.updateRestTimerDisplay();
+          }, 100);
+        },
+        updateRestTimerDisplay() {
+          const timer = State.getRestTimer();
+          
+          let remainingSeconds;
+          if (!timer.running) {
+            // Show the set duration when not running
+            remainingSeconds = timer.remaining || timer.duration;
+          } else if (timer.paused) {
+            // Show paused remaining time
+            remainingSeconds = timer.remaining;
+          } else {
+            // Calculate countdown - actively running
+            const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
+            remainingSeconds = Math.max(0, timer.remaining - elapsed);
+            
+            // Check if timer is complete
+            if (remainingSeconds <= 0) {
+              this.handleRestTimerComplete();
+              return;
+            }
+          }
+          
+          const minutes = Math.floor(remainingSeconds / 60);
+          const seconds = remainingSeconds % 60;
+          DOM.restTimerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+          
+          // Visual feedback
+          DOM.restTimerDisplay.classList.remove('warning', 'complete');
+          if (timer.running && !timer.paused) {
+            if (remainingSeconds === 0) {
+              DOM.restTimerDisplay.classList.add('complete');
+            } else if (remainingSeconds <= 10) {
+              DOM.restTimerDisplay.classList.add('warning');
+            }
+          }
+        },
+        handleRestTimerComplete() {
+          State.setRestTimer({
+            running: false,
+            paused: false,
+            remaining: 0
+          });
+          DOM.restTimerPause.textContent = 'Start';
+          DOM.restTimerDisplay.classList.add('complete');
+          if (this.restTimerInterval) {
+            clearInterval(this.restTimerInterval);
+          }
+          this.updateRestTimerDisplay();
+          UI.announce('Rest time complete!');
+          
+          // Visual/audio feedback
+          if ('vibrate' in navigator) {
+            navigator.vibrate([200, 100, 200]);
+          }
+          
+          // Auto-reset after 2 seconds
+          setTimeout(() => {
+            const timer = State.getRestTimer();
+            if (!timer.running) {
+              this.handleRestTimerReset();
+            }
+          }, 2000);
         },
         handleTabClick(event) {
           if (event.target.closest('[role="tab"]')) {
@@ -1030,6 +1668,7 @@
           if (id === 'log-exercise') {
             State.save();
             UI.updateLogFormVisibility();
+            UI.updateSmartSuggestions();
             UI.renderHistory();
           }
         },
