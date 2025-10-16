@@ -222,15 +222,33 @@
       gap: 1rem;
     }
 
+    .form--log.grid-cols-3,
+    .form--log.grid-cols-2 {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .form--log.grid-cols-3 {
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .form--log.grid-cols-2 {
+      grid-template-columns: 1fr;
+    }
+
+    .form--log .form-group--with-info {
+      grid-column: 1 / -1;
+    }
+
+    .form--log #exercise-info-panel {
+      grid-column: 1 / -1;
+    }
+
+    .form--log .form-group--full-width {
+      grid-column: 1 / -1;
+    }
+
     @media (min-width: 640px) {
-      .form--log.grid-cols-3 {
-        grid-template-columns: 2fr 1fr 1fr;
-      }
-
-      .form--log.grid-cols-2 {
-        grid-template-columns: 2fr 1fr;
-      }
-
       .form--log {
         align-items: flex-end;
       }
@@ -528,6 +546,58 @@
       color: #c00;
     }
 
+    .form-group--with-info {
+      position: relative;
+    }
+
+    .form-group--with-info .form-group__label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .exercise-info-toggle {
+      background: none;
+      border: none;
+      color: var(--color-text-secondary);
+      cursor: pointer;
+      padding: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.2s;
+    }
+
+    .exercise-info-toggle:hover {
+      color: var(--color-primary);
+    }
+
+    .exercise-info-toggle.active {
+      color: var(--color-primary);
+    }
+
+    .exercise-info-panel {
+      margin-top: 0.5rem;
+      padding: 1rem;
+      background: var(--color-input-bg);
+      border: 1px solid var(--color-border);
+      border-radius: 4px;
+      display: none;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      color: var(--color-text-secondary);
+    }
+
+    .exercise-info-panel.show {
+      display: block;
+    }
+
+    .exercise-info-panel strong {
+      color: var(--color-text-primary);
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
     /* --- Quality of Life Features --- */
     .rest-timer {
       position: relative;
@@ -738,10 +808,19 @@
         <div class="card">
           <h2 class="card__title" id="log-form-title">Log an Activity</h2>
           <form id="log-form" class="form form--log" novalidate aria-labelledby="log-form-title">
-            <div class="form-group">
-              <label for="log-exercise" class="form-group__label">Exercise</label><select id="log-exercise"
-                class="input" name="exerciseId" required></select>
+            <div class="form-group form-group--with-info">
+              <label for="log-exercise" class="form-group__label">
+                Exercise
+                <button type="button" class="exercise-info-toggle" id="exercise-info-toggle" aria-label="Show exercise information" title="Show exercise information">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                    <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                  </svg>
+                </button>
+              </label>
+              <select id="log-exercise" class="input" name="exerciseId" required></select>
             </div>
+            <div id="exercise-info-panel" class="exercise-info-panel"></div>
             <div class="form-group" id="log-weight-group" hidden>
               <label for="log-weight" class="form-group__label">Weight (kg)</label><input type="number" id="log-weight"
                 class="input" name="weight" min="0" step="0.5" placeholder="20" pattern="[0-9]*" inputmode="numeric">
@@ -1281,6 +1360,8 @@
           this.tabs = document.querySelector('.tabs__list');
           this.logForm = get('log-form');
           this.logExerciseSelect = get('log-exercise');
+          this.exerciseInfoToggle = get('exercise-info-toggle');
+          this.exerciseInfoPanel = get('exercise-info-panel');
           this.logGroups = { weight: get('log-weight-group'), reps: get('log-reps-group'), distance: get('log-distance-group'), duration: get('log-duration-group') };
           this.logInputs = { weight: get('log-weight'), reps: get('log-reps'), distance: get('log-distance'), duration: get('log-duration') };
           this.logDurationLabel = this.logGroups.duration.querySelector('label');
@@ -1640,6 +1721,7 @@
           DOM.tabs.addEventListener('click', this.handleTabClick.bind(this));
           DOM.logForm.addEventListener('submit', this.handleLogFormSubmit.bind(this));
           DOM.logForm.addEventListener('input', this.handleLogFormInput.bind(this));
+          DOM.exerciseInfoToggle.addEventListener('click', this.handleExerciseInfoToggle.bind(this));
           DOM.restTimerToggle.addEventListener('click', this.handleRestTimerToggle.bind(this));
           DOM.restTimerDecrease.addEventListener('click', this.handleRestTimerDecrease.bind(this));
           DOM.restTimerIncrease.addEventListener('click', this.handleRestTimerIncrease.bind(this));
@@ -1913,7 +1995,27 @@
             State.save();
             UI.updateLogFormVisibility();
             UI.renderHistory();
+            this.updateExerciseInfo();
           }
+        },
+        updateExerciseInfo() {
+          const { exercises, logForm } = State.get();
+          const selectedExercise = exercises.find(ex => ex.id === logForm.exerciseId);
+          
+          if (selectedExercise && selectedExercise.notes) {
+            DOM.exerciseInfoToggle.style.display = 'inline-flex';
+            DOM.exerciseInfoPanel.innerHTML = `<strong>${selectedExercise.name}</strong>${selectedExercise.notes}`;
+          } else {
+            DOM.exerciseInfoToggle.style.display = 'none';
+            DOM.exerciseInfoPanel.classList.remove('show');
+            DOM.exerciseInfoToggle.classList.remove('active');
+          }
+        },
+        handleExerciseInfoToggle() {
+          const isShowing = DOM.exerciseInfoPanel.classList.contains('show');
+          DOM.exerciseInfoPanel.classList.toggle('show');
+          DOM.exerciseInfoToggle.classList.toggle('active');
+          DOM.exerciseInfoToggle.setAttribute('aria-label', isShowing ? 'Show exercise information' : 'Hide exercise information');
         },
         handleLogFormSubmit(event) {
           event.preventDefault();
