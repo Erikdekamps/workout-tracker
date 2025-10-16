@@ -335,10 +335,13 @@
       border-width: 0 2px 2px 0;
       transform: rotate(45deg);
       transition: transform 0.2s ease-in-out;
+      flex-shrink: 0;
+      margin-top: 0.1em;
     }
 
     details[open]>.collapsible-group__summary::after {
-      transform: rotate(-135deg) translateY(0.25em);
+      transform: rotate(-135deg);
+      margin-top: 0.3em;
     }
 
     details[open]>.collapsible-group__summary {
@@ -455,19 +458,6 @@
     }
 
     /* --- Quality of Life Features --- */
-    .smart-suggestions {
-      margin-top: 0.75rem;
-      padding: 0.75rem;
-      background-color: var(--color-input-bg);
-      border: 1px solid var(--color-border);
-    }
-
-    .smart-suggestions__text {
-      font-size: 0.875rem;
-      color: var(--color-text-secondary);
-      font-style: italic;
-    }
-
     .rest-timer {
       position: relative;
       width: 100%;
@@ -680,9 +670,6 @@
             <div class="form-group">
               <label for="log-exercise" class="form-group__label">Exercise</label><select id="log-exercise"
                 class="input" name="exerciseId" required></select>
-              <div class="smart-suggestions" id="log-suggestions" hidden>
-                <p id="last-workout-info" class="smart-suggestions__text"></p>
-              </div>
             </div>
             <div class="form-group" id="log-weight-group" hidden>
               <label for="log-weight" class="form-group__label">Weight (kg)</label><input type="number" id="log-weight"
@@ -900,8 +887,6 @@
           this.tabs = document.querySelector('.tabs__list');
           this.logForm = get('log-form');
           this.logExerciseSelect = get('log-exercise');
-          this.logSuggestions = get('log-suggestions');
-          this.lastWorkoutInfo = get('last-workout-info');
           this.logGroups = { weight: get('log-weight-group'), reps: get('log-reps-group'), distance: get('log-distance-group'), duration: get('log-duration-group') };
           this.logInputs = { weight: get('log-weight'), reps: get('log-reps'), distance: get('log-distance'), duration: get('log-duration') };
           this.logDurationLabel = this.logGroups.duration.querySelector('label');
@@ -1024,52 +1009,6 @@
             }
           });
           this.updateLogFormVisibility();
-          this.updateSmartSuggestions();
-        },
-        updateSmartSuggestions() {
-          const { exercises, history, logForm } = State.get();
-          const exerciseId = logForm.exerciseId;
-          
-          if (!exerciseId) {
-            DOM.logSuggestions.hidden = true;
-            return;
-          }
-
-          const exercise = exercises.find(ex => ex.id === exerciseId);
-          const recentActivities = history
-            .filter(item => item.exerciseId === exerciseId)
-            .sort((a, b) => b.timestamp - a.timestamp);
-
-          if (recentActivities.length === 0) {
-            DOM.logSuggestions.hidden = true;
-            return;
-          }
-
-          DOM.logSuggestions.hidden = false;
-          const lastActivity = recentActivities[0];
-          
-          let infoText = 'Last: ';
-          if (lastActivity.hasOwnProperty('weight')) {
-            infoText += `${lastActivity.weight} kg × ${lastActivity.reps} reps`;
-          } else if (lastActivity.hasOwnProperty('distance')) {
-            infoText += `${lastActivity.distance} km in ${lastActivity.duration} min`;
-          } else if (lastActivity.hasOwnProperty('reps')) {
-            infoText += `${lastActivity.reps} reps`;
-          } else if (lastActivity.hasOwnProperty('duration')) {
-            infoText += `${lastActivity.duration} seconds`;
-          }
-          
-          const timeSince = Date.now() - lastActivity.timestamp;
-          const daysSince = Math.floor(timeSince / (1000 * 60 * 60 * 24));
-          if (daysSince === 0) {
-            infoText += ' (today)';
-          } else if (daysSince === 1) {
-            infoText += ' (yesterday)';
-          } else if (daysSince < 7) {
-            infoText += ` (${daysSince} days ago)`;
-          }
-
-          DOM.lastWorkoutInfo.textContent = infoText;
         },
         renderHistory() {
           const { exercises, history, logForm } = State.get();
@@ -1549,7 +1488,6 @@
           if (id === 'log-exercise') {
             State.save();
             UI.updateLogFormVisibility();
-            UI.updateSmartSuggestions();
             UI.renderHistory();
           }
         },
