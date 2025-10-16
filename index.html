@@ -196,20 +196,6 @@
       background-color: var(--color-input-bg);
     }
 
-    .button--link {
-      background: none;
-      border: none;
-      color: var(--color-primary);
-      text-decoration: underline;
-      padding: 0;
-      font-size: 0.875rem;
-      cursor: pointer;
-    }
-
-    .button--link:hover {
-      color: var(--color-primary-hover);
-    }
-
     .button--icon {
       display: inline-flex;
       align-items: center;
@@ -243,10 +229,6 @@
 
       .form--log.grid-cols-2 {
         grid-template-columns: 2fr 1fr;
-      }
-
-      .form--log.grid-cols-1 {
-        grid-template-columns: 2fr;
       }
 
       .form--log {
@@ -747,10 +729,7 @@
         </div>
 
         <div class="card" id="history-card">
-          <div class="card__title-container">
-            <h2 class="card__title" id="history-title">History</h2>
-            <button id="clear-history-filter" class="button button--icon" aria-label="Clear filter" hidden>×</button>
-          </div>
+          <h2 class="card__title" id="history-title">History</h2>
           <div id="history-container" role="feed" aria-busy="false">
             <div id="history-list" class="collapsible-list"></div>
             <p id="history-empty-state">No activities logged yet. Let's get to work!</p>
@@ -930,7 +909,6 @@
           this.historyList = get('history-list');
           this.historyTitle = get('history-title');
           this.historyEmptyState = get('history-empty-state');
-          this.clearHistoryFilterBtn = get('clear-history-filter');
           this.addExerciseForm = get('add-exercise-form');
           this.newExerciseInputs = { name: get('new-exercise-name'), category: get('new-exercise-category'), type: get('new-exercise-type'), notes: get('new-exercise-notes') };
           this.manageExerciseList = get('manage-exercise-list');
@@ -1100,11 +1078,9 @@
           if (filterExerciseId) {
             const filteredExercise = exercises.find(ex => ex.id === filterExerciseId);
             DOM.historyTitle.textContent = `History for ${filteredExercise?.name || 'Unknown'}`;
-            DOM.clearHistoryFilterBtn.hidden = false;
             historyToRender = history.filter(item => item.exerciseId === filterExerciseId);
           } else {
             DOM.historyTitle.textContent = 'History';
-            DOM.clearHistoryFilterBtn.hidden = true;
           }
 
           DOM.historyList.innerHTML = '';
@@ -1312,7 +1288,6 @@
           DOM.addExerciseForm.addEventListener('submit', this.handleAddExerciseFormSubmit.bind(this));
           DOM.manageExerciseList.addEventListener('click', this.handleManageListClick.bind(this));
           DOM.newExerciseInputs.name.addEventListener('input', this.handleSettingsFilterInput.bind(this));
-          DOM.clearHistoryFilterBtn.addEventListener('click', this.handleClearFilter.bind(this));
           this.updateRestTimerDisplay();
           this.restoreRestTimerState();
           this.resumeRestTimerIfRunning();
@@ -1684,13 +1659,6 @@
           State.setEditingExercise(null, null);
           State.setKeepCategoryOpen(null); // <-- CORRECT: Reset temporary state on new filter action
           UI.renderManageExerciseList();
-        },
-        handleClearFilter() {
-          State.setLogFormField('exerciseId', '');
-          DOM.logExerciseSelect.value = '';
-          State.save();
-          UI.updateLogFormVisibility();
-          UI.renderHistory();
         }
       };
 
