@@ -1579,6 +1579,7 @@
             clearInterval(this.restTimerInterval);
           }
           this.updateRestTimerDisplay();
+          State.save();
           UI.announce('Timer reset');
         },
         startRestTimerInterval() {
