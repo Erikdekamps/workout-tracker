@@ -780,7 +780,35 @@
         },
         _constants: {
           STORAGE_KEY: 'workoutTrackerState_v5',
-          EXERCISE_CATEGORIES: ['Cardio', 'Chest', 'Back', 'Legs', 'Shoulders', 'Biceps', 'Triceps', 'Core', 'Other'],
+          EXERCISE_CATEGORIES: [
+            'Abs',
+            'Back', 
+            'Biceps',
+            'Calves',
+            'Cardio',
+            'Chest', 
+            'Core',
+            'Forearms',
+            'Full Body',
+            'Functional',
+            'Glutes',
+            'Hamstrings',
+            'Legs', 
+            'Lower Back',
+            'Mobility',
+            'Obliques',
+            'Olympic Lifts',
+            'Other',
+            'Pilates',
+            'Plyometrics',
+            'Quadriceps',
+            'Shoulders', 
+            'Sports',
+            'Stretching',
+            'Traps',
+            'Triceps',
+            'Yoga'
+          ],
           EXERCISE_TYPES: {
             WEIGHT_REPS: { id: 'weight_reps', label: 'Weight & Reps' }, REPS_ONLY: { id: 'reps_only', label: 'Reps Only' },
             TIMED: { id: 'timed', label: 'Timed (e.g., Plank)' }, DISTANCE_TIME: { id: 'distance_time', label: 'Distance & Time' }
@@ -832,15 +860,291 @@
           let nextId = startId;
           const generateId = (prefix) => `${prefix}-${nextId++}`;
           const { WEIGHT_REPS, REPS_ONLY, TIMED, DISTANCE_TIME } = this._constants.EXERCISE_TYPES;
+          
+          // Helper to create exercise object with auto-generated ID
+          const ex = (name, category, type, notes = '') => ({ 
+            id: generateId('ex'), 
+            name, 
+            category, 
+            type, 
+            notes 
+          });
+          
           const defaultExercises = [
-            { id: generateId('ex'), name: 'Running', category: 'Cardio', type: DISTANCE_TIME.id, notes: 'Keep a steady pace.' }, { id: generateId('ex'), name: 'Jump Rope', category: 'Cardio', type: TIMED.id, notes: 'Count seconds of activity.' },
-            { id: generateId('ex'), name: 'Barbell Bench Press', category: 'Chest', type: WEIGHT_REPS.id, notes: '' }, { id: generateId('ex'), name: 'Push-ups', category: 'Chest', type: REPS_ONLY.id, notes: '' },
-            { id: generateId('ex'), name: 'Barbell Row', category: 'Back', type: WEIGHT_REPS.id, notes: 'Pull to lower chest, squeeze back.' }, { id: generateId('ex'), name: 'Pull-ups', category: 'Back', type: REPS_ONLY.id, notes: '' },
-            { id: generateId('ex'), name: 'Barbell Squat', category: 'Legs', type: WEIGHT_REPS.id, notes: '' }, { id: generateId('ex'), name: 'Wall Sit', category: 'Legs', type: TIMED.id, notes: 'Keep thighs parallel to the ground.' },
-            { id: generateId('ex'), name: 'Overhead Press (Barbell)', category: 'Shoulders', type: WEIGHT_REPS.id, notes: '' }, { id: generateId('ex'), name: 'Dumbbell Curl', category: 'Biceps', type: WEIGHT_REPS.id, notes: '' },
-            { id: generateId('ex'), name: 'Tricep Pushdown (Cable)', category: 'Triceps', type: WEIGHT_REPS.id, notes: '' }, { id: generateId('ex'), name: 'Dips (Bodyweight)', category: 'Triceps', type: REPS_ONLY.id, notes: '' },
-            { id: generateId('ex'), name: 'Crunches', category: 'Core', type: REPS_ONLY.id, notes: '' }, { id: generateId('ex'), name: 'Plank', category: 'Core', type: TIMED.id, notes: 'Keep back straight.' },
-            { id: generateId('ex'), name: 'Stretching', category: 'Other', type: TIMED.id, notes: 'Hold each stretch for a number of seconds.' }
+            // Abs
+            ex('Ab Roller', 'Abs', REPS_ONLY.id),
+            ex('Cable Crunches (Abs)', 'Abs', WEIGHT_REPS.id),
+            ex('Decline Crunches', 'Abs', REPS_ONLY.id),
+            ex('Dragon Flags', 'Abs', REPS_ONLY.id, 'Advanced'),
+            ex('Hanging Knee Raises', 'Abs', REPS_ONLY.id),
+            ex('Hollow Body Hold', 'Abs', TIMED.id),
+            ex('Toes to Bar', 'Abs', REPS_ONLY.id),
+            
+            // Back
+            ex('Assisted Pull-ups', 'Back', REPS_ONLY.id, 'Machine assisted'),
+            ex('Barbell Row', 'Back', WEIGHT_REPS.id, 'Bent over'),
+            ex('Chin-ups', 'Back', REPS_ONLY.id, 'Underhand grip'),
+            ex('Close Grip Lat Pulldown', 'Back', WEIGHT_REPS.id),
+            ex('Deadlift', 'Back', WEIGHT_REPS.id, 'Full body compound'),
+            ex('Dumbbell Row', 'Back', WEIGHT_REPS.id, 'Single arm'),
+            ex('Face Pulls', 'Back', WEIGHT_REPS.id, 'Rear delts and upper back'),
+            ex('Hyperextensions', 'Back', REPS_ONLY.id, 'Lower back'),
+            ex('Inverted Rows', 'Back', REPS_ONLY.id, 'Bodyweight'),
+            ex('Lat Pulldown', 'Back', WEIGHT_REPS.id, 'Wide grip'),
+            ex('Pull-ups', 'Back', REPS_ONLY.id, 'Overhand grip'),
+            ex('Seated Cable Row', 'Back', WEIGHT_REPS.id),
+            ex('T-Bar Row', 'Back', WEIGHT_REPS.id),
+            
+            // Biceps
+            ex('Barbell Curl', 'Biceps', WEIGHT_REPS.id, 'Standing'),
+            ex('Cable Curl', 'Biceps', WEIGHT_REPS.id),
+            ex('Concentration Curl', 'Biceps', WEIGHT_REPS.id, 'Single arm'),
+            ex('Dumbbell Curl', 'Biceps', WEIGHT_REPS.id, 'Alternating or together'),
+            ex('EZ Bar Curl', 'Biceps', WEIGHT_REPS.id, 'Angled bar'),
+            ex('Hammer Curl', 'Biceps', WEIGHT_REPS.id, 'Neutral grip'),
+            ex('Incline Dumbbell Curl', 'Biceps', WEIGHT_REPS.id, 'Longer range'),
+            ex('Preacher Curl', 'Biceps', WEIGHT_REPS.id),
+            
+            // Calves
+            ex('Calf Raise on Leg Press', 'Calves', WEIGHT_REPS.id),
+            ex('Donkey Calf Raise', 'Calves', WEIGHT_REPS.id),
+            ex('Jump Rope (Calf Focus)', 'Calves', TIMED.id),
+            ex('Seated Calf Raise', 'Calves', WEIGHT_REPS.id, 'Machine'),
+            ex('Single Leg Calf Raise', 'Calves', REPS_ONLY.id),
+            ex('Standing Calf Raise', 'Calves', WEIGHT_REPS.id, 'Machine or Smith'),
+            
+            // Cardio
+            ex('Burpees', 'Cardio', REPS_ONLY.id, 'Full body cardio'),
+            ex('Cycling', 'Cardio', DISTANCE_TIME.id, 'Road bike or stationary'),
+            ex('Elliptical', 'Cardio', TIMED.id),
+            ex('High Knees', 'Cardio', TIMED.id),
+            ex('Jump Rope', 'Cardio', TIMED.id),
+            ex('Mountain Climbers', 'Cardio', TIMED.id),
+            ex('Rowing Machine', 'Cardio', DISTANCE_TIME.id),
+            ex('Running', 'Cardio', DISTANCE_TIME.id, 'Outdoor or treadmill'),
+            ex('Stair Climber', 'Cardio', TIMED.id),
+            ex('Swimming', 'Cardio', DISTANCE_TIME.id, 'Any stroke'),
+            
+            // Chest
+            ex('Barbell Bench Press', 'Chest', WEIGHT_REPS.id, 'Flat bench'),
+            ex('Cable Flyes', 'Chest', WEIGHT_REPS.id),
+            ex('Chest Press Machine', 'Chest', WEIGHT_REPS.id),
+            ex('Decline Barbell Bench Press', 'Chest', WEIGHT_REPS.id),
+            ex('Diamond Push-ups', 'Chest', REPS_ONLY.id, 'Tricep focus'),
+            ex('Dips (Chest)', 'Chest', REPS_ONLY.id, 'Lean forward'),
+            ex('Dumbbell Bench Press', 'Chest', WEIGHT_REPS.id),
+            ex('Dumbbell Flyes', 'Chest', WEIGHT_REPS.id, 'Slight bend in elbows'),
+            ex('Incline Barbell Bench Press', 'Chest', WEIGHT_REPS.id, '30-45 degree angle'),
+            ex('Incline Dumbbell Press', 'Chest', WEIGHT_REPS.id),
+            ex('Pec Deck Machine', 'Chest', WEIGHT_REPS.id),
+            ex('Push-ups', 'Chest', REPS_ONLY.id, 'Bodyweight'),
+            ex('Wide Push-ups', 'Chest', REPS_ONLY.id),
+            
+            // Core
+            ex('Ab Wheel Rollout', 'Core', REPS_ONLY.id),
+            ex('Bicycle Crunches', 'Core', REPS_ONLY.id),
+            ex('Bird Dog', 'Core', REPS_ONLY.id, 'Stability'),
+            ex('Cable Crunches', 'Core', WEIGHT_REPS.id, 'Kneeling'),
+            ex('Crunches', 'Core', REPS_ONLY.id),
+            ex('Dead Bug', 'Core', REPS_ONLY.id),
+            ex('Hanging Leg Raises', 'Core', REPS_ONLY.id, 'Advanced'),
+            ex('Leg Raises', 'Core', REPS_ONLY.id, 'Lower abs'),
+            ex('Mountain Climbers', 'Core', TIMED.id, 'Dynamic core'),
+            ex('Plank', 'Core', TIMED.id, 'Front plank'),
+            ex('Russian Twists', 'Core', REPS_ONLY.id, 'Add weight for challenge'),
+            ex('Side Plank', 'Core', TIMED.id, 'Each side'),
+            ex('Sit-ups', 'Core', REPS_ONLY.id),
+            ex('V-ups', 'Core', REPS_ONLY.id, 'Advanced'),
+            
+            // Forearms
+            ex('Dead Hang', 'Forearms', TIMED.id, 'Bar hang'),
+            ex('Farmers Walk', 'Forearms', TIMED.id, 'Heavy carries'),
+            ex('Hammer Curl (Forearm)', 'Forearms', WEIGHT_REPS.id),
+            ex('Plate Pinch', 'Forearms', TIMED.id, 'Grip strength'),
+            ex('Reverse Curls', 'Forearms', WEIGHT_REPS.id),
+            ex('Reverse Wrist Curls', 'Forearms', WEIGHT_REPS.id, 'Palms down'),
+            ex('Wrist Curls', 'Forearms', WEIGHT_REPS.id, 'Palms up'),
+            
+            // Full Body
+            ex('Battle Ropes', 'Full Body', TIMED.id),
+            ex('Burpees (Full Body)', 'Full Body', REPS_ONLY.id),
+            ex('Kettlebell Swings', 'Full Body', REPS_ONLY.id),
+            ex('Man Makers', 'Full Body', REPS_ONLY.id, 'Burpee with dumbbells'),
+            ex('Sled Pull', 'Full Body', TIMED.id),
+            ex('Sled Push', 'Full Body', TIMED.id),
+            ex('Thrusters', 'Full Body', WEIGHT_REPS.id, 'Squat to press'),
+            ex('Turkish Get-Ups', 'Full Body', REPS_ONLY.id, 'Kettlebell'),
+            
+            // Functional
+            ex('Atlas Stone Lift', 'Functional', REPS_ONLY.id),
+            ex('Bear Crawl', 'Functional', TIMED.id),
+            ex('Crab Walk', 'Functional', TIMED.id),
+            ex('Farmer Carries', 'Functional', TIMED.id, 'Heavy carries'),
+            ex('Overhead Carries', 'Functional', TIMED.id),
+            ex('Sandbag Carries', 'Functional', TIMED.id),
+            ex('Waiter Carries', 'Functional', TIMED.id),
+            
+            // Glutes
+            ex('Cable Kickbacks', 'Glutes', WEIGHT_REPS.id, 'Each leg'),
+            ex('Donkey Kicks', 'Glutes', REPS_ONLY.id, 'Bodyweight'),
+            ex('Fire Hydrants', 'Glutes', REPS_ONLY.id),
+            ex('Frog Pumps', 'Glutes', REPS_ONLY.id),
+            ex('Glute Bridge', 'Glutes', WEIGHT_REPS.id, 'Single or double leg'),
+            ex('Hip Thrusts (Barbell)', 'Glutes', WEIGHT_REPS.id, 'Main glute builder'),
+            ex('Single Leg Glute Bridge', 'Glutes', REPS_ONLY.id),
+            ex('Sumo Deadlift', 'Glutes', WEIGHT_REPS.id, 'Wide stance'),
+            
+            // Hamstrings
+            ex('Good Mornings', 'Hamstrings', WEIGHT_REPS.id),
+            ex('Lying Leg Curl', 'Hamstrings', WEIGHT_REPS.id, 'Machine'),
+            ex('Nordic Curls', 'Hamstrings', REPS_ONLY.id, 'Advanced eccentric'),
+            ex('Romanian Deadlift (RDL)', 'Hamstrings', WEIGHT_REPS.id, 'Hip hinge'),
+            ex('Seated Leg Curl', 'Hamstrings', WEIGHT_REPS.id, 'Machine'),
+            ex('Stiff Leg Deadlift', 'Hamstrings', WEIGHT_REPS.id),
+            ex('Swiss Ball Leg Curl', 'Hamstrings', REPS_ONLY.id),
+            
+            // Legs
+            ex('Barbell Squat', 'Legs', WEIGHT_REPS.id, 'Back squat'),
+            ex('Bodyweight Squats', 'Legs', REPS_ONLY.id),
+            ex('Bulgarian Split Squat', 'Legs', WEIGHT_REPS.id, 'Rear foot elevated'),
+            ex('Calf Raises', 'Legs', WEIGHT_REPS.id, 'Standing or seated'),
+            ex('Front Squat', 'Legs', WEIGHT_REPS.id),
+            ex('Goblet Squat', 'Legs', WEIGHT_REPS.id, 'Dumbbell or kettlebell'),
+            ex('Hack Squat', 'Legs', WEIGHT_REPS.id, 'Machine'),
+            ex('Hip Thrusts', 'Legs', WEIGHT_REPS.id, 'Glutes'),
+            ex('Jump Squats', 'Legs', REPS_ONLY.id, 'Explosive'),
+            ex('Leg Curl', 'Legs', WEIGHT_REPS.id, 'Hamstrings'),
+            ex('Leg Extension', 'Legs', WEIGHT_REPS.id, 'Quadriceps'),
+            ex('Leg Press', 'Legs', WEIGHT_REPS.id, 'Machine'),
+            ex('Romanian Deadlift', 'Legs', WEIGHT_REPS.id, 'Hamstring focus'),
+            ex('Step-ups', 'Legs', REPS_ONLY.id),
+            ex('Walking Lunges', 'Legs', REPS_ONLY.id, 'Can add weight'),
+            ex('Wall Sit', 'Legs', TIMED.id, 'Isometric hold'),
+            
+            // Lower Back
+            ex('Back Extensions', 'Lower Back', REPS_ONLY.id),
+            ex('Good Mornings (Lower Back)', 'Lower Back', WEIGHT_REPS.id),
+            ex('Hyperextensions (Lower Back)', 'Lower Back', REPS_ONLY.id),
+            ex('Reverse Hyperextensions', 'Lower Back', REPS_ONLY.id),
+            ex('Superman', 'Lower Back', TIMED.id),
+            
+            // Mobility
+            ex('Ankle Mobility', 'Mobility', REPS_ONLY.id),
+            ex('Cossack Squats', 'Mobility', REPS_ONLY.id),
+            ex('Hip 90/90', 'Mobility', TIMED.id),
+            ex('Hip CARs', 'Mobility', REPS_ONLY.id, 'Controlled articular rotations'),
+            ex('Shoulder CARs', 'Mobility', REPS_ONLY.id),
+            ex('Thoracic Rotation', 'Mobility', REPS_ONLY.id),
+            
+            // Obliques
+            ex('Bicycle Crunches (Obliques)', 'Obliques', REPS_ONLY.id),
+            ex('Oblique Crunches', 'Obliques', REPS_ONLY.id),
+            ex('Russian Twists (Obliques)', 'Obliques', REPS_ONLY.id),
+            ex('Side Bends', 'Obliques', WEIGHT_REPS.id, 'Dumbbell'),
+            ex('Side Plank (Obliques)', 'Obliques', TIMED.id),
+            ex('Wood Choppers', 'Obliques', WEIGHT_REPS.id, 'Cable'),
+            
+            // Olympic Lifts
+            ex('Clean and Jerk', 'Olympic Lifts', WEIGHT_REPS.id, 'Full movement'),
+            ex('Clean Pull', 'Olympic Lifts', WEIGHT_REPS.id),
+            ex('Hang Clean', 'Olympic Lifts', WEIGHT_REPS.id),
+            ex('Power Clean', 'Olympic Lifts', WEIGHT_REPS.id),
+            ex('Power Snatch', 'Olympic Lifts', WEIGHT_REPS.id),
+            ex('Push Press', 'Olympic Lifts', WEIGHT_REPS.id),
+            ex('Snatch', 'Olympic Lifts', WEIGHT_REPS.id),
+            
+            // Other
+            ex('Breathing Exercises', 'Other', TIMED.id),
+            ex('Foam Rolling (Recovery)', 'Other', TIMED.id),
+            ex('Ice Bath', 'Other', TIMED.id),
+            ex('Meditation', 'Other', TIMED.id),
+            ex('Sauna', 'Other', TIMED.id),
+            
+            // Pilates
+            ex('Hundred', 'Pilates', REPS_ONLY.id),
+            ex('Pilates Bridge', 'Pilates', REPS_ONLY.id),
+            ex('Roll Up', 'Pilates', REPS_ONLY.id),
+            ex('Single Leg Circle', 'Pilates', REPS_ONLY.id),
+            ex('Swan', 'Pilates', REPS_ONLY.id),
+            ex('Teaser', 'Pilates', REPS_ONLY.id),
+            
+            // Plyometrics
+            ex('Box Jumps', 'Plyometrics', REPS_ONLY.id),
+            ex('Broad Jumps', 'Plyometrics', REPS_ONLY.id),
+            ex('Clap Push-ups', 'Plyometrics', REPS_ONLY.id),
+            ex('Depth Jumps', 'Plyometrics', REPS_ONLY.id),
+            ex('Lateral Bounds', 'Plyometrics', REPS_ONLY.id),
+            ex('Medicine Ball Slams', 'Plyometrics', REPS_ONLY.id),
+            ex('Single Leg Hops', 'Plyometrics', REPS_ONLY.id),
+            ex('Tuck Jumps', 'Plyometrics', REPS_ONLY.id),
+            
+            // Quadriceps
+            ex('Bulgarian Split Squats', 'Quadriceps', WEIGHT_REPS.id, 'Rear foot elevated'),
+            ex('Cyclist Squats', 'Quadriceps', WEIGHT_REPS.id, 'Heels elevated'),
+            ex('Front Squat (Barbell)', 'Quadriceps', WEIGHT_REPS.id, 'Quad focused'),
+            ex('Leg Extension Machine', 'Quadriceps', WEIGHT_REPS.id),
+            ex('Leg Press (High Foot)', 'Quadriceps', WEIGHT_REPS.id),
+            ex('Sissy Squats', 'Quadriceps', REPS_ONLY.id, 'Advanced'),
+            ex('Walking Lunges', 'Quadriceps', WEIGHT_REPS.id),
+            
+            // Shoulders
+            ex('Arnold Press', 'Shoulders', WEIGHT_REPS.id, 'Rotating press'),
+            ex('Cable Lateral Raises', 'Shoulders', WEIGHT_REPS.id),
+            ex('Dumbbell Shoulder Press', 'Shoulders', WEIGHT_REPS.id),
+            ex('Front Raises', 'Shoulders', WEIGHT_REPS.id),
+            ex('Handstand Push-ups', 'Shoulders', REPS_ONLY.id, 'Advanced'),
+            ex('Lateral Raises', 'Shoulders', WEIGHT_REPS.id, 'Side delts'),
+            ex('Overhead Press (Barbell)', 'Shoulders', WEIGHT_REPS.id, 'Standing or seated'),
+            ex('Pike Push-ups', 'Shoulders', REPS_ONLY.id, 'Bodyweight shoulder focus'),
+            ex('Rear Delt Flyes', 'Shoulders', WEIGHT_REPS.id, 'Bent over'),
+            ex('Shoulder Press Machine', 'Shoulders', WEIGHT_REPS.id),
+            ex('Upright Rows', 'Shoulders', WEIGHT_REPS.id),
+            
+            // Sports
+            ex('Basketball', 'Sports', TIMED.id),
+            ex('Boxing', 'Sports', TIMED.id),
+            ex('Kickboxing', 'Sports', TIMED.id),
+            ex('Rock Climbing', 'Sports', TIMED.id),
+            ex('Soccer', 'Sports', TIMED.id),
+            ex('Swimming Laps', 'Sports', DISTANCE_TIME.id),
+            ex('Tennis', 'Sports', TIMED.id),
+            
+            // Stretching
+            ex('Cat-Cow Stretch', 'Stretching', TIMED.id),
+            ex('Chest Stretch', 'Stretching', TIMED.id),
+            ex('Hamstring Stretch', 'Stretching', TIMED.id),
+            ex('Hip Flexor Stretch', 'Stretching', TIMED.id),
+            ex('Pigeon Pose', 'Stretching', TIMED.id),
+            ex('Quad Stretch', 'Stretching', TIMED.id),
+            ex('Shoulder Stretch', 'Stretching', TIMED.id),
+            ex('Tricep Stretch', 'Stretching', TIMED.id),
+            
+            // Traps
+            ex('Barbell Shrugs', 'Traps', WEIGHT_REPS.id),
+            ex('Cable Shrugs', 'Traps', WEIGHT_REPS.id),
+            ex('Dumbbell Shrugs', 'Traps', WEIGHT_REPS.id),
+            ex('Face Pulls (Trap Focus)', 'Traps', WEIGHT_REPS.id),
+            ex('Overhead Shrugs', 'Traps', WEIGHT_REPS.id),
+            ex('Rack Pulls', 'Traps', WEIGHT_REPS.id, 'Partial deadlift'),
+            
+            // Triceps
+            ex('Bench Dips', 'Triceps', REPS_ONLY.id, 'Feet elevated option'),
+            ex('Close Grip Bench Press', 'Triceps', WEIGHT_REPS.id),
+            ex('Diamond Push-ups', 'Triceps', REPS_ONLY.id, 'Hands together'),
+            ex('Dips (Tricep)', 'Triceps', REPS_ONLY.id, 'Upright position'),
+            ex('Kickbacks', 'Triceps', WEIGHT_REPS.id, 'Dumbbell'),
+            ex('Overhead Tricep Extension', 'Triceps', WEIGHT_REPS.id, 'Dumbbell or cable'),
+            ex('Skull Crushers', 'Triceps', WEIGHT_REPS.id, 'Lying tricep extension'),
+            ex('Tricep Pushdown (Cable)', 'Triceps', WEIGHT_REPS.id, 'Rope or bar'),
+            
+            // Yoga
+            ex('Bridge Pose (Yoga)', 'Yoga', TIMED.id),
+            ex('Child Pose', 'Yoga', TIMED.id),
+            ex('Cobra Pose', 'Yoga', TIMED.id),
+            ex('Downward Dog', 'Yoga', TIMED.id),
+            ex('Sun Salutation', 'Yoga', REPS_ONLY.id),
+            ex('Tree Pose', 'Yoga', TIMED.id),
+            ex('Warrior Pose', 'Yoga', TIMED.id)
           ];
           const initialState = JSON.parse(JSON.stringify(this._defaults));
           initialState.exercises = defaultExercises;
