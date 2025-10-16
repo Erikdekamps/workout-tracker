@@ -508,19 +508,19 @@
             </div>
             <div class="form-group" id="log-weight-group" hidden>
               <label for="log-weight" class="form-group__label">Weight (kg)</label><input type="number" id="log-weight"
-                class="input" name="weight" min="0" step="0.5" placeholder="20">
+                class="input" name="weight" min="0" step="0.5" placeholder="20" pattern="[0-9]*" inputmode="numeric">
             </div>
             <div class="form-group" id="log-reps-group" hidden>
               <label for="log-reps" class="form-group__label">Reps</label><input type="number" id="log-reps"
-                class="input" name="reps" min="1" step="1" placeholder="10">
+                class="input" name="reps" min="1" step="1" placeholder="10" pattern="[0-9]*" inputmode="numeric">
             </div>
             <div class="form-group" id="log-distance-group" hidden>
               <label for="log-distance" class="form-group__label">Distance (km)</label><input type="number"
-                id="log-distance" class="input" name="distance" min="0" step="0.1" placeholder="5">
+                id="log-distance" class="input" name="distance" min="0" step="0.1" placeholder="5" pattern="[0-9]*" inputmode="numeric">
             </div>
             <div class="form-group" id="log-duration-group" hidden>
               <label for="log-duration" class="form-group__label">Duration</label><input type="number" id="log-duration"
-                class="input" name="duration" min="1" step="1" placeholder="30">
+                class="input" name="duration" min="1" step="1" placeholder="30" pattern="[0-9]*" inputmode="numeric">
             </div>
             <button type="submit" class="button button--primary form-group--full-width">Log Activity</button>
           </form>
