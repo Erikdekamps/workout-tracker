@@ -824,9 +824,8 @@
     <header class="header">
       <h1 class="header__title">Workout Tracker</h1>
       <button type="button" class="header__timer" id="rest-timer-open" aria-label="Open rest timer">
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-          <path d="M8.5 5.6a.5.5 0 1 0-1 0v2.9h-3a.5.5 0 0 0 0 1H8a.5.5 0 0 0 .5-.5z"/>
-          <path d="M6.5 1A.5.5 0 0 1 7 .5h2a.5.5 0 0 1 0 1v.57c1.36.196 2.594.78 3.584 1.64l.012-.013.354-.354-.354-.353a.5.5 0 0 1 .707-.708l1.414 1.415a.5.5 0 1 1-.707.707l-.353-.354-.354.354-.013.012A7 7 0 1 1 7 1.071V1.5a.5.5 0 0 1-.5.5M.86 5.387A7 7 0 1 0 13.14 10.613 7 7 0 0 0 .86 5.387"/>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M15 1H9v2h6V1zM11 14h2V8h-2v6zm8.03-6.61l1.42-1.42c-.43-.51-.9-.99-1.41-1.41l-1.42 1.42C16.07 4.74 14.12 4 12 4c-4.97 0-9 4.03-9 9s4.02 9 9 9 9-4.03 9-9c0-2.12-.74-4.07-1.97-5.61zM12 20c-3.87 0-7-3.13-7-7s3.13-7 7-7 7 3.13 7 7-3.13 7-7 7z"/>
         </svg>
         <span id="rest-timer-toggle-display" style="display: none;"></span>
       </button>
@@ -952,20 +951,24 @@
   </dialog>
 
   <dialog id="rest-timer-dialog" class="dialog">
-    <h3 class="dialog__title">Rest Timer</h3>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+      <h3 class="dialog__title" style="margin: 0;">Rest Timer</h3>
+      <button class="button button--icon" id="rest-timer-close" aria-label="Close timer" style="margin: 0;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+        </svg>
+      </button>
+    </div>
     <div style="padding: 1rem 0;">
       <div class="rest-timer__display-container" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1.5rem;">
         <button id="rest-timer-decrease" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700;" aria-label="Decrease time by 10 seconds">−</button>
         <div class="rest-timer__display" id="rest-timer-display" style="font-size: 3rem; font-weight: 700; text-align: center; color: var(--color-primary); font-variant-numeric: tabular-nums; min-width: 150px;">1:00</div>
         <button id="rest-timer-increase" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700;" aria-label="Increase time by 10 seconds">+</button>
       </div>
-      <div class="rest-timer__controls" style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+      <div class="rest-timer__controls" style="display: flex; gap: 0.5rem;">
         <button id="rest-timer-pause" class="button button--primary" style="flex: 1;">Start</button>
         <button id="rest-timer-reset" class="button button--secondary" style="flex: 1;">Reset</button>
       </div>
-    </div>
-    <div class="dialog__actions">
-      <button class="button button--secondary" id="rest-timer-close">Close</button>
     </div>
   </dialog>
 
