@@ -222,16 +222,9 @@
       gap: 1rem;
     }
 
-    .form--log.grid-cols-3 {
-      display: grid;
-      gap: 1rem;
+    /* Log form always uses 2-column grid (weight + reps) */
+    .form--log {
       grid-template-columns: 1fr 1fr;
-    }
-
-    .form--log.grid-cols-2 {
-      display: grid;
-      gap: 1rem;
-      grid-template-columns: 1fr;
     }
 
     .form--log .form-group--with-info,
@@ -829,14 +822,6 @@
               <label for="log-reps" class="form-group__label">Reps</label><input type="number" id="log-reps"
                 class="input" name="reps" min="1" step="1" placeholder="10" pattern="[0-9]*" inputmode="numeric">
             </div>
-            <div class="form-group" id="log-distance-group" hidden>
-              <label for="log-distance" class="form-group__label">Distance (km)</label><input type="number"
-                id="log-distance" class="input" name="distance" min="0" step="0.1" placeholder="5" pattern="[0-9]*" inputmode="numeric">
-            </div>
-            <div class="form-group" id="log-duration-group" hidden>
-              <label for="log-duration" class="form-group__label">Duration</label><input type="number" id="log-duration"
-                class="input" name="duration" min="1" step="1" placeholder="30" pattern="[0-9]*" inputmode="numeric">
-            </div>
             <button type="submit" class="button button--primary form-group--full-width">Log Activity</button>
           </form>
         </div>
@@ -892,10 +877,6 @@
               <label for="new-exercise-category" class="form-group__label">Category</label><select
                 id="new-exercise-category" class="input" required></select>
             </div>
-            <div class="form-group">
-              <label for="new-exercise-type" class="form-group__label">Exercise Type</label><select
-                id="new-exercise-type" class="input" required></select>
-            </div>
             <div class="form-group form-group--full-width">
               <label for="new-exercise-notes" class="form-group__label">Notes (Optional)</label><textarea
                 id="new-exercise-notes" class="input"
@@ -949,8 +930,8 @@
         _data: {},
         _defaults: {
           activeTab: 'log', exercises: [], history: [],
-          logForm: { exerciseId: '', weight: '', reps: '', distance: '', duration: '' },
-          settings: { filter: '', editingExerciseId: null, editingCategory: null },
+          logForm: { exerciseId: '' },
+          settings: { filter: '', editingExerciseId: null },
           restTimer: { running: false, paused: false, startTime: 0, remaining: 60, duration: 60, expanded: false }
         },
         _constants: {
@@ -963,84 +944,67 @@
             'Shoulders',
             'Triceps'
           ],
-          EXERCISE_TYPES: {
-            WEIGHT_REPS: { id: 'weight_reps', label: 'Weight & Reps' }, REPS_ONLY: { id: 'reps_only', label: 'Reps Only' },
-            TIMED: { id: 'timed', label: 'Timed (e.g., Plank)' }, DISTANCE_TIME: { id: 'distance_time', label: 'Distance & Time' }
-          }
+          EXERCISE_TYPE: 'weight_reps', // All exercises use weight & reps
+          // UI strings
+          SELECT_MUSCLE_GROUP: 'Select muscle group',
+          SELECT_EXERCISE: 'Select an exercise'
         },
 
         init() { this._data = this._load(); },
 
         _load() {
           try {
-            const storedState = localStorage.getItem(this._constants.STORAGE_KEY);
-            if (!storedState) {
-              return this._getInitialState();
-            }
-            const parsedState = JSON.parse(storedState);
+            const stored = localStorage.getItem(this._constants.STORAGE_KEY);
+            if (!stored) return this._getInitialState();
+            
+            const parsed = JSON.parse(stored);
+            
+            // Calculate next ID from existing items
             const allIds = [
-              ...(parsedState.exercises || []).map(item => parseInt(item.id.split('-')[1])),
-              ...(parsedState.history || []).map(item => parseInt(item.id.split('-')[1]))
-            ].filter(Boolean);
-            const nextId = (allIds.length > 0 ? Math.max(...allIds) : 0) + 1;
-            const initialState = this._getInitialState(nextId);
-            const mergedState = { ...initialState, ...parsedState };
+              ...(parsed.exercises || []),
+              ...(parsed.history || [])
+            ].map(item => parseInt(item.id.split('-')[1])).filter(Boolean);
+            const nextId = allIds.length ? Math.max(...allIds) + 1 : 1;
             
-            if (mergedState.restTimer && !mergedState.restTimer.hasOwnProperty('remaining')) {
-              mergedState.restTimer.remaining = mergedState.restTimer.duration || 60;
+            // Merge with defaults to ensure all properties exist
+            const state = { ...this._getInitialState(nextId), ...parsed };
+            
+            // Migrate old timer format if needed
+            if (state.restTimer && !state.restTimer.hasOwnProperty('remaining')) {
+              state.restTimer.remaining = state.restTimer.duration || 60;
             }
             
-            return mergedState;
+            return state;
           } catch (error) {
-            console.error('Failed to load state, falling back to defaults.', error);
+            console.error('Failed to load state:', error);
             return this._getInitialState();
           }
         },
 
         save() {
-          const stateToSave = {
-            exercises: this._data.exercises, 
-            history: this._data.history,
-            activeTab: this._data.activeTab, 
-            logForm: { exerciseId: this._data.logForm.exerciseId },
-            restTimer: this._data.restTimer
-          };
-          localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify(stateToSave));
+          const { exercises, history, activeTab, logForm, restTimer } = this._data;
+          localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify({
+            exercises,
+            history,
+            activeTab,
+            logForm: { exerciseId: logForm.exerciseId },
+            restTimer
+          }));
         },
 
         _getInitialState(startId = 1) {
           let nextId = startId;
           const generateId = (prefix) => `${prefix}-${nextId++}`;
-          const { WEIGHT_REPS, REPS_ONLY, TIMED, DISTANCE_TIME } = this._constants.EXERCISE_TYPES;
-          
-          // Helper to create exercise object with auto-generated ID
-          const ex = (name, category, type, notes = '') => ({ 
-            id: generateId('ex'), 
-            name, 
-            category, 
-            type, 
-            notes 
-          });
           
           const defaultExercises = [
-            // Back
-            ex('Row Deltoid', 'Back', WEIGHT_REPS.id, 'Sit in machine with chest against pad. Grip handles and pull back, squeezing shoulder blades together. Control the return.'),
-            
-            // Biceps
-            ex('Barbell Curl', 'Biceps', WEIGHT_REPS.id, 'Stand with barbell, arms extended. Curl bar to shoulders, keeping elbows still. Lower with control.'),
-            
-            // Chest
-            ex('Chest Press', 'Chest', WEIGHT_REPS.id, 'Sit in machine, grip handles at chest level. Press forward until arms extended. Return with control.'),
-            
-            // Legs
-            ex('Leg Press', 'Legs', WEIGHT_REPS.id, 'Sit in machine, feet on platform. Push weight away by extending legs. Lower with control.'),
-            
-            // Shoulders
-            ex('Deltoid Machine', 'Shoulders', WEIGHT_REPS.id, 'Sit in machine, grip handles at shoulders. Press up until arms extended or raise out to sides. Lower with control.'),
-            
-            // Triceps
-            ex('Triceps Press', 'Triceps', WEIGHT_REPS.id, 'Sit or stand at machine. Push handles down until arms straight. Return slowly with control.')
+            { id: generateId('ex'), name: 'Row Deltoid', category: 'Back', type: 'weight_reps', notes: 'Sit in machine with chest against pad. Grip handles and pull back, squeezing shoulder blades together. Control the return.' },
+            { id: generateId('ex'), name: 'Barbell Curl', category: 'Biceps', type: 'weight_reps', notes: 'Stand with barbell, arms extended. Curl bar to shoulders, keeping elbows still. Lower with control.' },
+            { id: generateId('ex'), name: 'Chest Press', category: 'Chest', type: 'weight_reps', notes: 'Sit in machine, grip handles at chest level. Press forward until arms extended. Return with control.' },
+            { id: generateId('ex'), name: 'Leg Press', category: 'Legs', type: 'weight_reps', notes: 'Sit in machine, feet on platform. Push weight away by extending legs. Lower with control.' },
+            { id: generateId('ex'), name: 'Deltoid Machine', category: 'Shoulders', type: 'weight_reps', notes: 'Sit in machine, grip handles at shoulders. Press up until arms extended or raise out to sides. Lower with control.' },
+            { id: generateId('ex'), name: 'Triceps Press', category: 'Triceps', type: 'weight_reps', notes: 'Sit or stand at machine. Push handles down until arms straight. Return slowly with control.' }
           ];
+          
           const initialState = JSON.parse(JSON.stringify(this._defaults));
           initialState.exercises = defaultExercises;
           initialState._nextId = nextId;
@@ -1062,14 +1026,51 @@
         addHistoryItem(item) { this._data.history.push(item); },
         setActiveTab(tabId) { this._data.activeTab = tabId; },
         setLogFormField(field, value) { this._data.logForm[field] = value; },
-        resetLogForm() { this._data.logForm = { ...this._defaults.logForm, exerciseId: this._data.logForm.exerciseId }; },
         setFilter(query) { this._data.settings.filter = query; },
-        setEditingExercise(id, category) {
-          this._data.settings.editingExerciseId = id;
-          this._data.settings.editingCategory = category;
-        },
+        setEditingExercise(id) { this._data.settings.editingExerciseId = id; },
         setRestTimer(data) { Object.assign(this._data.restTimer, data); },
-        getRestTimer() { return this._data.restTimer; }
+        getRestTimer() { return this._data.restTimer; },
+        
+        // Helper to get sorted exercises by category
+        getExercisesByCategory(category) {
+          return this._data.exercises
+            .filter(ex => ex.category === category)
+            .sort((a, b) => a.name.localeCompare(b.name));
+        },
+        
+        // Helper to find an exercise by ID
+        findExercise(id) {
+          return this._data.exercises.find(ex => ex.id === id);
+        },
+        
+        // Helper to group exercises by category
+        groupExercisesByCategory(exercises) {
+          return exercises.reduce((acc, ex) => {
+            (acc[ex.category] = acc[ex.category] || []).push(ex);
+            return acc;
+          }, {});
+        },
+        
+        // Helper to filter exercises by name query
+        filterExercisesByName(query) {
+          const lowerQuery = query.trim().toLowerCase();
+          return this._data.exercises.filter(ex => ex.name.toLowerCase().includes(lowerQuery));
+        },
+        
+        // Helper to check if exercise name already exists (case-insensitive)
+        exerciseNameExists(name, excludeId = null) {
+          const lowerName = name.toLowerCase();
+          return this._data.exercises.some(ex => 
+            ex.id !== excludeId && ex.name.toLowerCase() === lowerName
+          );
+        },
+        
+        // Helper to get most recent activity for an exercise
+        getMostRecentActivity(exerciseId) {
+          return this._data.history
+            .filter(item => item.exerciseId === exerciseId)
+            .sort((a, b) => b.timestamp - a.timestamp)[0];
+        }
       };
 
       // ===================================================================================
@@ -1086,16 +1087,15 @@
           this.logExerciseSelect = get('log-exercise');
           this.exerciseInfoToggle = get('exercise-info-toggle');
           this.exerciseInfoPanel = get('exercise-info-panel');
-          this.logGroups = { weight: get('log-weight-group'), reps: get('log-reps-group'), distance: get('log-distance-group'), duration: get('log-duration-group') };
-          this.logInputs = { weight: get('log-weight'), reps: get('log-reps'), distance: get('log-distance'), duration: get('log-duration') };
-          this.logDurationLabel = this.logGroups.duration.querySelector('label');
+          this.logGroups = { weight: get('log-weight-group'), reps: get('log-reps-group') };
+          this.logInputs = { weight: get('log-weight'), reps: get('log-reps') };
           this.historyContainer = get('history-container');
           this.historyList = get('history-list');
           this.historyTitle = get('history-title');
           this.historyEmptyState = get('history-empty-state');
           this.clearHistoryFilter = get('clear-history-filter');
           this.addExerciseForm = get('add-exercise-form');
-          this.newExerciseInputs = { name: get('new-exercise-name'), category: get('new-exercise-category'), type: get('new-exercise-type'), notes: get('new-exercise-notes') };
+          this.newExerciseInputs = { name: get('new-exercise-name'), category: get('new-exercise-category'), notes: get('new-exercise-notes') };
           this.manageExerciseList = get('manage-exercise-list');
           this.manageExerciseEmptyState = get('manage-exercise-empty-state');
           this.dialog = get('confirmation-dialog');
@@ -1121,6 +1121,20 @@
       // UI MODULE
       // ===================================================================================
       const UI = {
+        // Helper to create option elements for select dropdowns
+        createSelectOptions(items) {
+          return items.map(item => `<option value="${item.value}">${item.label}</option>`).join('');
+        },
+        
+        // Helper to group activities by date
+        groupActivitiesByDate(activities) {
+          return activities.reduce((acc, activity) => {
+            const date = new Date(activity.timestamp).toLocaleDateString('en-CA');
+            (acc[date] = acc[date] || []).push(activity);
+            return acc;
+          }, {});
+        },
+        
         render() {
           DOM.historyContainer.setAttribute('aria-busy', 'true');
           this.renderTabs();
@@ -1141,68 +1155,32 @@
           });
         },
         updateLogFormVisibility() {
-          const { exercises, logForm } = State.get();
-          const selectedExercise = exercises.find(ex => ex.id === logForm.exerciseId);
+          const { logForm } = State.get();
+          const selectedExercise = State.findExercise(logForm.exerciseId);
+          
+          // Hide all fields by default
           Object.values(DOM.logGroups).forEach(g => g.hidden = true);
           Object.values(DOM.logInputs).forEach(i => i.required = false);
-          DOM.logForm.className = 'form form--log';
-          if (!selectedExercise) {
-            return;
-          }
-          const { EXERCISE_TYPES } = State.getConstants();
-          let visibleGroups = 0;
-          switch (selectedExercise.type) {
-            case EXERCISE_TYPES.WEIGHT_REPS.id:
-              DOM.logGroups.weight.hidden = false;
-              DOM.logInputs.weight.required = true;
-              DOM.logGroups.reps.hidden = false;
-              DOM.logInputs.reps.required = true;
-              visibleGroups = 2;
-              break;
-            case EXERCISE_TYPES.REPS_ONLY.id:
-              DOM.logGroups.reps.hidden = false;
-              DOM.logInputs.reps.required = true;
-              visibleGroups = 1;
-              break;
-            case EXERCISE_TYPES.TIMED.id:
-              DOM.logGroups.duration.hidden = false;
-              DOM.logInputs.duration.required = true;
-              DOM.logDurationLabel.textContent = 'Duration (seconds)';
-              DOM.logInputs.duration.placeholder = '60';
-              visibleGroups = 1;
-              break;
-            case EXERCISE_TYPES.DISTANCE_TIME.id:
-              DOM.logGroups.distance.hidden = false;
-              DOM.logInputs.distance.required = true;
-              DOM.logGroups.duration.hidden = false;
-              DOM.logInputs.duration.required = true;
-              DOM.logDurationLabel.textContent = 'Time (minutes)';
-              DOM.logInputs.duration.placeholder = '30';
-              visibleGroups = 2;
-              break;
-          }
-          if (visibleGroups === 2) {
-            DOM.logForm.classList.add('grid-cols-3');
-          } else if (visibleGroups === 1) {
-            DOM.logForm.classList.add('grid-cols-2');
+          
+          // Show weight + reps fields if exercise is selected (all exercises use this type)
+          if (selectedExercise) {
+            DOM.logGroups.weight.hidden = false;
+            DOM.logInputs.weight.required = true;
+            DOM.logGroups.reps.hidden = false;
+            DOM.logInputs.reps.required = true;
           }
         },
         renderLogForm() {
-          const { exercises, logForm } = State.get();
-          const { EXERCISE_CATEGORIES } = State.getConstants();
+          const { logForm } = State.get();
+          const { EXERCISE_CATEGORIES, SELECT_MUSCLE_GROUP } = State.getConstants();
           
           // Populate muscle group dropdown
-          DOM.logMuscleGroupSelect.innerHTML = '<option value="">Select muscle group</option>';
-          EXERCISE_CATEGORIES.forEach(category => {
-            const option = document.createElement('option');
-            option.value = category;
-            option.textContent = category;
-            DOM.logMuscleGroupSelect.appendChild(option);
-          });
+          DOM.logMuscleGroupSelect.innerHTML = `<option value="">${SELECT_MUSCLE_GROUP}</option>` +
+            this.createSelectOptions(EXERCISE_CATEGORIES.map(c => ({ value: c, label: c })));
           
           // Set muscle group value from saved exercise if exists
           if (logForm.exerciseId) {
-            const selectedExercise = exercises.find(ex => ex.id === logForm.exerciseId);
+            const selectedExercise = State.findExercise(logForm.exerciseId);
             if (selectedExercise) {
               DOM.logMuscleGroupSelect.value = selectedExercise.category;
             }
@@ -1212,37 +1190,24 @@
           this.updateExerciseSelectFromMuscleGroup();
           
           DOM.logExerciseSelect.value = logForm.exerciseId;
-          Object.entries(logForm).forEach(([key, value]) => {
-            if (DOM.logInputs[key]) {
-              DOM.logInputs[key].value = value;
-            }
-          });
           this.updateLogFormVisibility();
         },
         updateExerciseSelectFromMuscleGroup() {
-          const { exercises } = State.get();
           const selectedMuscleGroup = DOM.logMuscleGroupSelect.value;
           const exerciseGroup = document.getElementById('log-exercise-group');
+          const { SELECT_EXERCISE } = State.getConstants();
           
           if (!selectedMuscleGroup) {
             exerciseGroup.hidden = true;
-            DOM.logExerciseSelect.innerHTML = '<option value="">Select an exercise</option>';
+            DOM.logExerciseSelect.innerHTML = `<option value="">${SELECT_EXERCISE}</option>`;
             return;
           }
           
           exerciseGroup.hidden = false;
-          DOM.logExerciseSelect.innerHTML = '<option value="">Select an exercise</option>';
           
-          const filteredExercises = exercises
-            .filter(ex => ex.category === selectedMuscleGroup)
-            .sort((a, b) => a.name.localeCompare(b.name));
-          
-          filteredExercises.forEach(ex => {
-            const option = document.createElement('option');
-            option.value = ex.id;
-            option.textContent = ex.name;
-            DOM.logExerciseSelect.appendChild(option);
-          });
+          const filteredExercises = State.getExercisesByCategory(selectedMuscleGroup);
+          DOM.logExerciseSelect.innerHTML = `<option value="">${SELECT_EXERCISE}</option>` +
+            this.createSelectOptions(filteredExercises.map(ex => ({ value: ex.id, label: ex.name })));
         },
         renderHistory() {
           const { exercises, history, logForm } = State.get();
@@ -1256,14 +1221,13 @@
           
           // Filter by specific exercise if selected
           if (filterExerciseId) {
-            const filteredExercise = exercises.find(ex => ex.id === filterExerciseId);
+            const filteredExercise = State.findExercise(filterExerciseId);
             DOM.historyTitle.textContent = `History for ${filteredExercise?.name || 'Unknown'}`;
             historyToRender = history.filter(item => item.exerciseId === filterExerciseId);
           } 
           // Filter by muscle group if selected (but no specific exercise)
           else if (selectedMuscleGroup) {
-            const exercisesInGroup = exercises.filter(ex => ex.category === selectedMuscleGroup);
-            const exerciseIds = exercisesInGroup.map(ex => ex.id);
+            const exerciseIds = State.getExercisesByCategory(selectedMuscleGroup).map(ex => ex.id);
             historyToRender = history.filter(item => exerciseIds.includes(item.exerciseId));
             DOM.historyTitle.textContent = `History for ${selectedMuscleGroup}`;
           } 
@@ -1274,27 +1238,23 @@
 
           DOM.historyList.innerHTML = '';
           const sortedHistory = [...historyToRender].sort((a, b) => b.timestamp - a.timestamp);
-          const hasHistory = sortedHistory.length > 0;
-          DOM.historyEmptyState.hidden = hasHistory;
-          DOM.historyList.hidden = !hasHistory;
           
-          if (!hasHistory) {
-            if (filterExerciseId) {
-              DOM.historyEmptyState.textContent = 'No activities logged for this exercise yet.';
-            } else if (selectedMuscleGroup) {
-              DOM.historyEmptyState.textContent = `No activities logged for ${selectedMuscleGroup} yet.`;
-            } else {
-              DOM.historyEmptyState.textContent = 'No activities logged yet. Let\'s get to work!';
-            }
+          // Show/hide empty state
+          if (sortedHistory.length === 0) {
+            DOM.historyEmptyState.hidden = false;
+            DOM.historyList.hidden = true;
+            DOM.historyEmptyState.textContent = filterExerciseId 
+              ? 'No activities logged for this exercise yet.'
+              : selectedMuscleGroup 
+                ? `No activities logged for ${selectedMuscleGroup} yet.`
+                : 'No activities logged yet. Let\'s get to work!';
             return;
           }
           
-          const activitiesByDate = sortedHistory.reduce((acc, activity) => {
-            const date = new Date(activity.timestamp).toLocaleDateString('en-CA');
-            (acc[date] = acc[date] || []).push(activity);
-            return acc;
-          }, {});
+          DOM.historyEmptyState.hidden = true;
+          DOM.historyList.hidden = false;
           
+          const activitiesByDate = this.groupActivitiesByDate(sortedHistory);
           Object.keys(activitiesByDate).sort((a, b) => new Date(b) - new Date(a)).forEach((dateString, index) => {
             const activities = activitiesByDate[dateString];
             const details = document.createElement('details');
@@ -1309,19 +1269,11 @@
             innerList.className = 'collapsible-group__list';
             
             activities.forEach(item => {
-              const exercise = exercises.find(ex => ex.id === item.exerciseId);
+              const exercise = State.findExercise(item.exerciseId);
               if (!exercise) return;
               
-              let metaText = '';
-              if (item.hasOwnProperty('weight')) {
-                metaText = `${item.weight || 0} kg × ${item.reps} reps`;
-              } else if (item.hasOwnProperty('distance')) {
-                metaText = `${item.distance} km in ${item.duration} min`;
-              } else if (item.hasOwnProperty('reps')) {
-                metaText = `${item.reps} reps`;
-              } else if (item.hasOwnProperty('duration')) {
-                metaText = `${item.duration} seconds`;
-              }
+              // All exercises use weight + reps format
+              const metaText = `${item.weight || 0} kg × ${item.reps} reps`;
               
               const li = document.createElement('li');
               li.className = 'history-list__item';
@@ -1334,24 +1286,20 @@
           });
         },
         renderManageExerciseList() {
-          const { exercises, settings } = State.get();
-          const { EXERCISE_CATEGORIES, EXERCISE_TYPES } = State.getConstants();
-          const createOptions = (items) => items.map(item => `<option value="${item.value}">${item.label}</option>`).join('');
-          DOM.newExerciseInputs.category.innerHTML = createOptions(EXERCISE_CATEGORIES.map(c => ({ value: c, label: c })));
-          DOM.newExerciseInputs.type.innerHTML = createOptions(Object.values(EXERCISE_TYPES).map(t => ({ value: t.id, label: t.label })));
+          const { settings } = State.get();
+          const { EXERCISE_CATEGORIES } = State.getConstants();
+          
+          DOM.newExerciseInputs.category.innerHTML = this.createSelectOptions(EXERCISE_CATEGORIES.map(c => ({ value: c, label: c })));
           DOM.manageExerciseList.innerHTML = '';
-          const filterQuery = settings.filter.trim().toLowerCase();
-          const filteredExercises = exercises.filter(ex => ex.name.toLowerCase().includes(filterQuery));
+          
+          const filteredExercises = State.filterExercisesByName(settings.filter);
           DOM.manageExerciseEmptyState.hidden = filteredExercises.length > 0;
           DOM.manageExerciseList.hidden = filteredExercises.length === 0;
           if (filteredExercises.length > 0) {
-            const exercisesByCategory = filteredExercises.reduce((acc, ex) => {
-              (acc[ex.category] = acc[ex.category] || []).push(ex);
-              return acc;
-            }, {});
+            const exercisesByCategory = State.groupExercisesByCategory(filteredExercises);
             Object.keys(exercisesByCategory).sort().forEach(category => {
               const details = document.createElement('details');
-              if (filterQuery || settings.editingCategory === category) { details.open = true; }
+              if (settings.filter) { details.open = true; } // Open when filtering
               const summary = document.createElement('summary');
               summary.className = 'collapsible-group__summary';
               summary.textContent = `${category} (${exercisesByCategory[category].length} exercise${exercisesByCategory[category].length > 1 ? 's' : ''})`;
@@ -1390,7 +1338,7 @@
           return fragment;
         },
         _createExerciseEditView(exercise) {
-          const { EXERCISE_CATEGORIES, EXERCISE_TYPES } = State.getConstants();
+          const { EXERCISE_CATEGORIES } = State.getConstants();
           const createSelect = (id, options, selectedValue) => {
             const select = document.createElement('select');
             select.className = 'input';
@@ -1429,7 +1377,6 @@
           nameInput.value = exercise.name;
           
           const categorySelect = createSelect(`edit-exercise-category-${exercise.id}`, EXERCISE_CATEGORIES.map(c => ({ value: c, label: c })), exercise.category);
-          const typeSelect = createSelect(`edit-exercise-type-${exercise.id}`, Object.values(EXERCISE_TYPES).map(t => ({ value: t.id, label: t.label })), exercise.type);
           
           const notesTextarea = document.createElement('textarea');
           notesTextarea.className = 'input';
@@ -1448,7 +1395,6 @@
           fieldsDiv.append(
             createFormGroup('Exercise Name', nameInput),
             createFormGroup('Category', categorySelect),
-            createFormGroup('Exercise Type', typeSelect),
             createFormGroup('Notes (Optional)', notesTextarea),
             actionsDiv
           );
@@ -1501,6 +1447,25 @@
       // ===================================================================================
       const Events = {
         restTimerInterval: null,
+        TIMER_ADJUST_STEP: 10, // seconds to add/subtract
+        TIMER_MIN_DURATION: 10, // minimum timer duration in seconds
+        TIMER_MAX_DURATION: 600, // maximum timer duration in seconds (10 minutes)
+        TIMER_UPDATE_INTERVAL: 100, // milliseconds between display updates
+        TIMER_WARNING_THRESHOLD: 10, // seconds remaining to show warning
+        TIMER_AUTO_RESET_DELAY: 2000, // milliseconds before auto-resetting after completion
+        
+        // Helper to format seconds as M:SS
+        formatTime(totalSeconds) {
+          const minutes = Math.floor(totalSeconds / 60);
+          const seconds = totalSeconds % 60;
+          return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        },
+        
+        // Helper to clear all form inputs
+        clearFormInputs() {
+          DOM.logInputs.weight.value = '';
+          DOM.logInputs.reps.value = '';
+        },
         
         init() {
           DOM.tabs.addEventListener('click', this.handleTabClick.bind(this));
@@ -1555,41 +1520,29 @@
           State.setRestTimer({ expanded: isExpanded });
           State.save();
         },
-        handleRestTimerDecrease() {
+        adjustRestTimer(delta) {
           const timer = State.getRestTimer();
           const isRunning = timer.running && !timer.paused;
           
           if (isRunning) {
             const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
             const currentRemaining = Math.max(0, timer.remaining - elapsed);
-            const newRemaining = Math.max(0, currentRemaining - 10);
+            const newRemaining = Math.max(0, Math.min(this.TIMER_MAX_DURATION, currentRemaining + delta));
             State.setRestTimer({ startTime: Date.now(), remaining: newRemaining });
-            UI.announce(`10 seconds removed`);
+            UI.announce(`${Math.abs(delta)} seconds ${delta > 0 ? 'added' : 'removed'}`);
           } else {
-            const newDuration = Math.max(10, timer.duration - 10);
+            const newDuration = Math.max(this.TIMER_MIN_DURATION, Math.min(this.TIMER_MAX_DURATION, timer.duration + delta));
             State.setRestTimer({ duration: newDuration, remaining: newDuration });
             UI.announce(`Rest duration set to ${newDuration} seconds`);
           }
           State.save();
           this.updateRestTimerDisplay();
         },
+        handleRestTimerDecrease() {
+          this.adjustRestTimer(-this.TIMER_ADJUST_STEP);
+        },
         handleRestTimerIncrease() {
-          const timer = State.getRestTimer();
-          const isRunning = timer.running && !timer.paused;
-          
-          if (isRunning) {
-            const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
-            const currentRemaining = Math.max(0, timer.remaining - elapsed);
-            const newRemaining = Math.min(600, currentRemaining + 10);
-            State.setRestTimer({ startTime: Date.now(), remaining: newRemaining });
-            UI.announce(`10 seconds added`);
-          } else {
-            const newDuration = Math.min(600, timer.duration + 10);
-            State.setRestTimer({ duration: newDuration, remaining: newDuration });
-            UI.announce(`Rest duration set to ${newDuration} seconds`);
-          }
-          State.save();
-          this.updateRestTimerDisplay();
+          this.adjustRestTimer(this.TIMER_ADJUST_STEP);
         },
         handleRestTimerPause() {
           const timer = State.getRestTimer();
@@ -1636,7 +1589,7 @@
             clearInterval(this.restTimerInterval);
           }
           this.updateRestTimerDisplay();
-          this.restTimerInterval = setInterval(() => this.updateRestTimerDisplay(), 100);
+          this.restTimerInterval = setInterval(() => this.updateRestTimerDisplay(), this.TIMER_UPDATE_INTERVAL);
         },
         updateRestTimerDisplay() {
           const timer = State.getRestTimer();
@@ -1656,10 +1609,7 @@
             }
           }
           
-          const minutes = Math.floor(remainingSeconds / 60);
-          const seconds = remainingSeconds % 60;
-          const timeString = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-          
+          const timeString = this.formatTime(remainingSeconds);
           DOM.restTimerDisplay.textContent = timeString;
           DOM.restTimerToggleDisplay.textContent = timeString;
           
@@ -1667,7 +1617,7 @@
           if (timer.running && !timer.paused) {
             if (remainingSeconds === 0) {
               DOM.restTimerDisplay.classList.add('complete');
-            } else if (remainingSeconds <= 10) {
+            } else if (remainingSeconds <= this.TIMER_WARNING_THRESHOLD) {
               DOM.restTimerDisplay.classList.add('warning');
             }
           }
@@ -1690,7 +1640,7 @@
             if (!State.getRestTimer().running) {
               this.handleRestTimerReset();
             }
-          }, 2000);
+          }, this.TIMER_AUTO_RESET_DELAY);
         },
         handleTabClick(event) {
           if (event.target.closest('[role="tab"]')) {
@@ -1708,72 +1658,21 @@
             // Clear exercise selection and form values
             DOM.logExerciseSelect.value = '';
             State.setLogFormField('exerciseId', '');
-            State.setLogFormField('weight', '');
-            State.setLogFormField('reps', '');
-            State.setLogFormField('distance', '');
-            State.setLogFormField('duration', '');
-            DOM.logInputs.weight.value = '';
-            DOM.logInputs.reps.value = '';
-            DOM.logInputs.distance.value = '';
-            DOM.logInputs.duration.value = '';
+            this.clearFormInputs();
             UI.updateLogFormVisibility();
             // Update history to show exercises from selected muscle group
             UI.renderHistory();
           } else if (id === 'log-exercise') {
             // Populate form values from most recent history entry if available
-            const { history } = State.get();
-            const exerciseHistory = history
-              .filter(item => item.exerciseId === value)
-              .sort((a, b) => b.timestamp - a.timestamp);
+            const mostRecent = State.getMostRecentActivity(value);
             
-            if (exerciseHistory.length > 0) {
-              const mostRecent = exerciseHistory[0];
-              
-              // Set weight if present
-              if (mostRecent.hasOwnProperty('weight')) {
-                State.setLogFormField('weight', mostRecent.weight);
-                DOM.logInputs.weight.value = mostRecent.weight;
-              } else {
-                State.setLogFormField('weight', '');
-                DOM.logInputs.weight.value = '';
-              }
-              
-              // Set reps if present
-              if (mostRecent.hasOwnProperty('reps')) {
-                State.setLogFormField('reps', mostRecent.reps);
-                DOM.logInputs.reps.value = mostRecent.reps;
-              } else {
-                State.setLogFormField('reps', '');
-                DOM.logInputs.reps.value = '';
-              }
-              
-              // Set distance if present
-              if (mostRecent.hasOwnProperty('distance')) {
-                State.setLogFormField('distance', mostRecent.distance);
-                DOM.logInputs.distance.value = mostRecent.distance;
-              } else {
-                State.setLogFormField('distance', '');
-                DOM.logInputs.distance.value = '';
-              }
-              
-              // Set duration if present
-              if (mostRecent.hasOwnProperty('duration')) {
-                State.setLogFormField('duration', mostRecent.duration);
-                DOM.logInputs.duration.value = mostRecent.duration;
-              } else {
-                State.setLogFormField('duration', '');
-                DOM.logInputs.duration.value = '';
-              }
+            if (mostRecent) {
+              // All exercises use weight + reps
+              DOM.logInputs.weight.value = mostRecent.weight || '';
+              DOM.logInputs.reps.value = mostRecent.reps || '';
             } else {
               // No history - clear all values
-              State.setLogFormField('weight', '');
-              State.setLogFormField('reps', '');
-              State.setLogFormField('distance', '');
-              State.setLogFormField('duration', '');
-              DOM.logInputs.weight.value = '';
-              DOM.logInputs.reps.value = '';
-              DOM.logInputs.distance.value = '';
-              DOM.logInputs.duration.value = '';
+              this.clearFormInputs();
             }
             
             State.save();
@@ -1791,14 +1690,7 @@
           State.setLogFormField('exerciseId', '');
           
           // Clear form input values
-          State.setLogFormField('weight', '');
-          State.setLogFormField('reps', '');
-          State.setLogFormField('distance', '');
-          State.setLogFormField('duration', '');
-          DOM.logInputs.weight.value = '';
-          DOM.logInputs.reps.value = '';
-          DOM.logInputs.distance.value = '';
-          DOM.logInputs.duration.value = '';
+          this.clearFormInputs();
           
           // Hide exercise field group
           DOM.logExerciseGroup.hidden = true;
@@ -1810,8 +1702,8 @@
           this.updateExerciseInfo();
         },
         updateExerciseInfo() {
-          const { exercises, logForm } = State.get();
-          const selectedExercise = exercises.find(ex => ex.id === logForm.exerciseId);
+          const { logForm } = State.get();
+          const selectedExercise = State.findExercise(logForm.exerciseId);
           
           if (selectedExercise?.notes) {
             DOM.exerciseInfoToggle.style.display = 'inline-flex';
@@ -1834,31 +1726,23 @@
             DOM.logForm.reportValidity();
             return;
           }
-          const { exercises, logForm } = State.get();
-          const { EXERCISE_TYPES } = State.getConstants();
-          const exercise = exercises.find(ex => ex.id === logForm.exerciseId);
-          const newActivity = { id: State.generateId('act'), exerciseId: exercise.id, timestamp: Date.now() };
-          switch (exercise.type) {
-            case EXERCISE_TYPES.WEIGHT_REPS.id:
-              newActivity.weight = parseFloat(DOM.logInputs.weight.value || 0);
-              newActivity.reps = parseInt(DOM.logInputs.reps.value, 10);
-              break;
-            case EXERCISE_TYPES.REPS_ONLY.id:
-              newActivity.reps = parseInt(DOM.logInputs.reps.value, 10);
-              break;
-            case EXERCISE_TYPES.TIMED.id:
-              newActivity.duration = parseInt(DOM.logInputs.duration.value, 10);
-              break;
-            case EXERCISE_TYPES.DISTANCE_TIME.id:
-              newActivity.distance = parseFloat(DOM.logInputs.distance.value, 10);
-              newActivity.duration = parseInt(DOM.logInputs.duration.value, 10);
-              break;
-          }
+          const { logForm } = State.get();
+          const exercise = State.findExercise(logForm.exerciseId);
+          
+          // All exercises use weight + reps
+          const newActivity = {
+            id: State.generateId('act'),
+            exerciseId: exercise.id,
+            timestamp: Date.now(),
+            weight: parseFloat(DOM.logInputs.weight.value || 0),
+            reps: parseInt(DOM.logInputs.reps.value, 10)
+          };
+          
           State.addHistoryItem(newActivity);
-          // Don't reset the form - keep values for easy re-logging
           State.save();
           UI.renderHistory();
           UI.announce(`${exercise.name} logged successfully.`);
+          
           // Blur any focused input to dismiss mobile keyboard
           if (document.activeElement && document.activeElement.tagName === 'INPUT') {
             document.activeElement.blur();
@@ -1871,13 +1755,20 @@
             return;
           }
           const name = DOM.newExerciseInputs.name.value.trim();
-          if (State.get().exercises.some(ex => ex.name.toLowerCase() === name.toLowerCase())) {
+          if (State.exerciseNameExists(name)) {
             UI.showDialog({ title: 'Duplicate Exercise', message: `An exercise with the name "${name}" already exists.`, confirmText: 'OK', showCancel: false });
             return;
           }
-          const newExercise = { id: State.generateId('ex'), name, category: DOM.newExerciseInputs.category.value, type: DOM.newExerciseInputs.type.value, notes: DOM.newExerciseInputs.notes.value.trim() };
+          // All exercises use weight_reps type
+          const newExercise = {
+            id: State.generateId('ex'),
+            name,
+            category: DOM.newExerciseInputs.category.value,
+            type: 'weight_reps',
+            notes: DOM.newExerciseInputs.notes.value.trim()
+          };
           State.addExercise(newExercise);
-          State.setEditingExercise(null, newExercise.category);
+          State.setEditingExercise(null);
           State.setFilter('');
           State.save();
           DOM.addExerciseForm.reset();
@@ -1890,28 +1781,32 @@
           if (!button) return;
           
           const { action, exerciseId } = button.dataset;
-          const exercise = State.get().exercises.find(ex => ex.id === exerciseId);
+          const exercise = State.findExercise(exerciseId);
           
           if (action === 'edit') {
-            State.setEditingExercise(exerciseId, exercise.category);
+            State.setEditingExercise(exerciseId);
             UI.renderManageExerciseList();
           } else if (action === 'cancel') {
-            State.setEditingExercise(null, exercise.category);
+            State.setEditingExercise(null);
             UI.renderManageExerciseList();
           } else if (action === 'save') {
-            const newName = DOM.manageExerciseList.querySelector(`#edit-exercise-name-${exerciseId}`).value.trim();
-            const newCategory = DOM.manageExerciseList.querySelector(`#edit-exercise-category-${exerciseId}`).value;
-            if (!newName || State.get().exercises.some(ex => ex.id !== exerciseId && ex.name.toLowerCase() === newName.toLowerCase())) {
+            const getField = (field) => DOM.manageExerciseList.querySelector(`#edit-exercise-${field}-${exerciseId}`).value.trim();
+            const newName = getField('name');
+            const newCategory = getField('category');
+            const newNotes = getField('notes');
+            
+            if (!newName || State.exerciseNameExists(newName, exerciseId)) {
               UI.showDialog({ title: 'Invalid Name', message: 'Exercise name cannot be empty or a duplicate.', confirmText: 'OK', showCancel: false });
               return;
             }
-            State.updateExercise(exerciseId, { 
-              name: newName, 
-              category: newCategory, 
-              type: DOM.manageExerciseList.querySelector(`#edit-exercise-type-${exerciseId}`).value, 
-              notes: DOM.manageExerciseList.querySelector(`#edit-exercise-notes-${exerciseId}`).value.trim() 
+            
+            State.updateExercise(exerciseId, {
+              name: newName,
+              category: newCategory,
+              type: 'weight_reps', // All exercises use this type
+              notes: newNotes
             });
-            State.setEditingExercise(null, newCategory);
+            State.setEditingExercise(null);
             State.save();
             UI.renderManageExerciseList();
             UI.announce(`${newName} saved successfully.`);
@@ -1932,7 +1827,7 @@
         },
         handleSettingsFilterInput(event) {
           State.setFilter(event.target.value);
-          State.setEditingExercise(null, null);
+          State.setEditingExercise(null);
           UI.renderManageExerciseList();
         },
         handleMenuToggle(event) {
