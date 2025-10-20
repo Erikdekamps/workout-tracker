@@ -989,7 +989,7 @@
         _data: {},
         _defaults: {
           activeTab: 'log', exercises: [], history: [],
-          logForm: { exerciseId: '' },
+          logForm: { exerciseId: '', weight: '', reps: '' },
           settings: { filter: '', editingExerciseId: null },
           restTimer: { running: false, paused: false, startTime: 0, remaining: 60, duration: 60 }
         },
@@ -1062,7 +1062,7 @@
               exercises,
               history,
               activeTab,
-              logForm: { exerciseId: logForm.exerciseId },
+              logForm: { exerciseId: logForm.exerciseId, weight: logForm.weight, reps: logForm.reps },
               restTimer
             }));
           } catch (error) {
@@ -1282,6 +1282,11 @@
           this.updateExerciseSelectFromMuscleGroup();
           
           DOM.logExerciseSelect.value = logForm.exerciseId;
+          
+          // Restore saved weight and reps values
+          DOM.logInputs.weight.value = logForm.weight || '';
+          DOM.logInputs.reps.value = logForm.reps || '';
+          
           this.updateLogFormVisibility();
         },
         updateExerciseSelectFromMuscleGroup() {
@@ -1596,6 +1601,8 @@
         clearFormInputs() {
           DOM.logInputs.weight.value = '';
           DOM.logInputs.reps.value = '';
+          State.setLogFormField('weight', '');
+          State.setLogFormField('reps', '');
         },
         
         init() {
@@ -1851,13 +1858,21 @@
         handleLogFormInput(event) {
           const { name, value, id } = event.target;
           State.setLogFormField(name, value);
-          if (id === 'log-muscle-group') {
+          
+          // Save weight and reps changes to state
+          if (id === 'log-weight') {
+            State.setLogFormField('weight', value);
+            State.save();
+          } else if (id === 'log-reps') {
+            State.setLogFormField('reps', value);
+            State.save();
+          } else if (id === 'log-muscle-group') {
             // Update exercise dropdown when muscle group changes
             UI.updateExerciseSelectFromMuscleGroup();
-            // Clear exercise selection and form values
+            // Clear exercise selection but keep weight/reps
             DOM.logExerciseSelect.value = '';
             State.setLogFormField('exerciseId', '');
-            this.clearFormInputs();
+            State.save();
             UI.updateLogFormVisibility();
             // Update history to show exercises from selected muscle group (targeted update)
             UI.updateHistoryOnly();
@@ -1869,10 +1884,11 @@
               // All exercises use weight + reps
               DOM.logInputs.weight.value = mostRecent.weight || '';
               DOM.logInputs.reps.value = mostRecent.reps || '';
-            } else {
-              // No history - clear all values
-              this.clearFormInputs();
+              // Save these values to state
+              State.setLogFormField('weight', mostRecent.weight || '');
+              State.setLogFormField('reps', mostRecent.reps || '');
             }
+            // Don't clear values if no history - keep user's input
             
             State.save();
             UI.updateLogFormVisibility();
@@ -1889,8 +1905,7 @@
           DOM.logExerciseSelect.value = '';
           State.setLogFormField('exerciseId', '');
           
-          // Clear form input values
-          this.clearFormInputs();
+          // Keep weight/reps values - don't clear them
           
           // Hide exercise field group
           DOM.logExerciseGroup.hidden = true;
@@ -1926,21 +1941,29 @@
           const currentValue = parseFloat(DOM.logInputs.weight.value) || 0;
           const newValue = Math.max(0, currentValue - 2.5);
           DOM.logInputs.weight.value = newValue;
+          State.setLogFormField('weight', newValue);
+          State.save();
         },
         handleLogWeightIncrease() {
           const currentValue = parseFloat(DOM.logInputs.weight.value) || 0;
           const newValue = Math.min(9999, currentValue + 2.5);
           DOM.logInputs.weight.value = newValue;
+          State.setLogFormField('weight', newValue);
+          State.save();
         },
         handleLogRepsDecrease() {
           const currentValue = parseInt(DOM.logInputs.reps.value) || 0;
           const newValue = Math.max(1, currentValue - 1);
           DOM.logInputs.reps.value = newValue;
+          State.setLogFormField('reps', newValue);
+          State.save();
         },
         handleLogRepsIncrease() {
           const currentValue = parseInt(DOM.logInputs.reps.value) || 0;
           const newValue = Math.min(9999, currentValue + 1);
           DOM.logInputs.reps.value = newValue;
+          State.setLogFormField('reps', newValue);
+          State.save();
         },
         handleLogFormSubmit(event) {
           event.preventDefault();
