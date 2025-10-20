@@ -816,11 +816,11 @@
             <div id="exercise-info-panel" class="exercise-info-panel"></div>
             <div class="form-group" id="log-weight-group" hidden>
               <label for="log-weight" class="form-group__label">Weight (kg)</label><input type="number" id="log-weight"
-                class="input" name="weight" min="0" step="0.5" placeholder="20" pattern="[0-9]*" inputmode="numeric">
+                class="input" name="weight" min="0" max="9999" step="0.5" placeholder="20" pattern="[0-9]*" inputmode="numeric">
             </div>
             <div class="form-group" id="log-reps-group" hidden>
               <label for="log-reps" class="form-group__label">Reps</label><input type="number" id="log-reps"
-                class="input" name="reps" min="1" step="1" placeholder="10" pattern="[0-9]*" inputmode="numeric">
+                class="input" name="reps" min="1" max="9999" step="1" placeholder="10" pattern="[0-9]*" inputmode="numeric">
             </div>
             <button type="submit" class="button button--primary form-group--full-width">Log Activity</button>
           </form>
@@ -947,7 +947,16 @@
           EXERCISE_TYPE: 'weight_reps', // All exercises use weight & reps
           // UI strings
           SELECT_MUSCLE_GROUP: 'Select muscle group',
-          SELECT_EXERCISE: 'Select an exercise'
+          SELECT_EXERCISE: 'Select an exercise',
+          // Timer constants
+          TIMER_ADJUST_STEP: 10, // seconds to add/subtract
+          TIMER_MIN_DURATION: 10, // minimum timer duration in seconds
+          TIMER_MAX_DURATION: 600, // maximum timer duration in seconds (10 minutes)
+          TIMER_UPDATE_INTERVAL: 100, // milliseconds between display updates
+          TIMER_WARNING_THRESHOLD: 10, // seconds remaining to show warning
+          TIMER_AUTO_RESET_DELAY: 2000, // milliseconds before auto-resetting after completion
+          // Vibration pattern for timer completion
+          TIMER_VIBRATION_PATTERN: [200, 100, 200]
         },
 
         init() { this._data = this._load(); },
@@ -958,6 +967,12 @@
             if (!stored) return this._getInitialState();
             
             const parsed = JSON.parse(stored);
+            
+            // Validate parsed data structure
+            if (!parsed || typeof parsed !== 'object') {
+              console.warn('Invalid stored data, using defaults');
+              return this._getInitialState();
+            }
             
             // Calculate next ID from existing items
             const allIds = [
@@ -982,14 +997,22 @@
         },
 
         save() {
-          const { exercises, history, activeTab, logForm, restTimer } = this._data;
-          localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify({
-            exercises,
-            history,
-            activeTab,
-            logForm: { exerciseId: logForm.exerciseId },
-            restTimer
-          }));
+          try {
+            const { exercises, history, activeTab, logForm, restTimer } = this._data;
+            localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify({
+              exercises,
+              history,
+              activeTab,
+              logForm: { exerciseId: logForm.exerciseId },
+              restTimer
+            }));
+          } catch (error) {
+            console.error('Failed to save state:', error);
+            // Notify user if storage quota exceeded or other error
+            if (error.name === 'QuotaExceededError') {
+              alert('Storage quota exceeded. Please delete some history to free up space.');
+            }
+          }
         },
 
         _getInitialState(startId = 1) {
@@ -1013,7 +1036,14 @@
 
         get() { return this._data; },
         getConstants() { return this._constants; },
-        generateId(prefix) { return `${prefix}-${this._data._nextId++}`; },
+        generateId(prefix) {
+          // Protect against ID overflow (extremely unlikely but theoretically possible)
+          if (this._data._nextId >= Number.MAX_SAFE_INTEGER) {
+            console.warn('ID counter approaching maximum, resetting to safe value');
+            this._data._nextId = 1;
+          }
+          return `${prefix}-${this._data._nextId++}`;
+        },
         addExercise(exercise) { this._data.exercises.push(exercise); },
         updateExercise(id, updates) {
           const ex = this._data.exercises.find(ex => ex.id === id);
@@ -1126,11 +1156,14 @@
           return items.map(item => `<option value="${item.value}">${item.label}</option>`).join('');
         },
         
-        // Helper to group activities by date
+        // Helper to group activities by date (timezone-independent using UTC)
         groupActivitiesByDate(activities) {
           return activities.reduce((acc, activity) => {
-            const date = new Date(activity.timestamp).toLocaleDateString('en-CA');
-            (acc[date] = acc[date] || []).push(activity);
+            // Use UTC date to avoid DST and timezone issues
+            const date = new Date(activity.timestamp);
+            const utcDate = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+            const dateKey = utcDate.toISOString().split('T')[0];
+            (acc[dateKey] = acc[dateKey] || []).push(activity);
             return acc;
           }, {});
         },
@@ -1158,17 +1191,12 @@
           const { logForm } = State.get();
           const selectedExercise = State.findExercise(logForm.exerciseId);
           
-          // Hide all fields by default
-          Object.values(DOM.logGroups).forEach(g => g.hidden = true);
-          Object.values(DOM.logInputs).forEach(i => i.required = false);
-          
-          // Show weight + reps fields if exercise is selected (all exercises use this type)
-          if (selectedExercise) {
-            DOM.logGroups.weight.hidden = false;
-            DOM.logInputs.weight.required = true;
-            DOM.logGroups.reps.hidden = false;
-            DOM.logInputs.reps.required = true;
-          }
+          // All exercises use weight + reps type - simply show/hide based on selection
+          const shouldShow = !!selectedExercise;
+          DOM.logGroups.weight.hidden = !shouldShow;
+          DOM.logInputs.weight.required = shouldShow;
+          DOM.logGroups.reps.hidden = !shouldShow;
+          DOM.logInputs.reps.required = shouldShow;
         },
         renderLogForm() {
           const { logForm } = State.get();
@@ -1227,8 +1255,10 @@
           } 
           // Filter by muscle group if selected (but no specific exercise)
           else if (selectedMuscleGroup) {
+            // Cache the exercise IDs to avoid repeated lookups
             const exerciseIds = State.getExercisesByCategory(selectedMuscleGroup).map(ex => ex.id);
-            historyToRender = history.filter(item => exerciseIds.includes(item.exerciseId));
+            const exerciseIdSet = new Set(exerciseIds);
+            historyToRender = history.filter(item => exerciseIdSet.has(item.exerciseId));
             DOM.historyTitle.textContent = `History for ${selectedMuscleGroup}`;
           } 
           // No filter - show all
@@ -1268,16 +1298,34 @@
             const innerList = document.createElement('ul');
             innerList.className = 'collapsible-group__list';
             
+            // Cache exercise lookups for this date group
+            const exerciseCache = new Map();
             activities.forEach(item => {
-              const exercise = State.findExercise(item.exerciseId);
-              if (!exercise) return;
+              // Validate activity item has required fields
+              if (!item || !item.exerciseId || typeof item.timestamp !== 'number') {
+                console.warn('Invalid activity item:', item);
+                return;
+              }
               
-              // All exercises use weight + reps format
-              const metaText = `${item.weight || 0} kg × ${item.reps} reps`;
+              let exercise = exerciseCache.get(item.exerciseId);
+              if (!exercise) {
+                exercise = State.findExercise(item.exerciseId);
+                if (!exercise) {
+                  console.warn('Exercise not found for activity:', item.exerciseId);
+                  return;
+                }
+                exerciseCache.set(item.exerciseId, exercise);
+              }
+              
+              // All exercises use weight + reps format - validate numeric values
+              const weight = typeof item.weight === 'number' ? item.weight : 0;
+              const reps = typeof item.reps === 'number' ? item.reps : 0;
+              const metaText = `${weight} kg × ${reps} reps`;
+              const timeString = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               
               const li = document.createElement('li');
               li.className = 'history-list__item';
-              li.innerHTML = `<div class="history-list__details"><span class="history-list__exercise">${exercise.name}</span><span class="history-list__meta">${metaText}</span></div><span class="history-list__time">${new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>`;
+              li.innerHTML = `<div class="history-list__details"><span class="history-list__exercise">${exercise.name}</span><span class="history-list__meta">${metaText}</span></div><span class="history-list__time">${timeString}</span>`;
               innerList.appendChild(li);
             });
             
@@ -1292,10 +1340,13 @@
           DOM.newExerciseInputs.category.innerHTML = this.createSelectOptions(EXERCISE_CATEGORIES.map(c => ({ value: c, label: c })));
           DOM.manageExerciseList.innerHTML = '';
           
+          // Cache filtered results to avoid repeated filtering
           const filteredExercises = State.filterExercisesByName(settings.filter);
-          DOM.manageExerciseEmptyState.hidden = filteredExercises.length > 0;
-          DOM.manageExerciseList.hidden = filteredExercises.length === 0;
-          if (filteredExercises.length > 0) {
+          const hasExercises = filteredExercises.length > 0;
+          DOM.manageExerciseEmptyState.hidden = hasExercises;
+          DOM.manageExerciseList.hidden = !hasExercises;
+          
+          if (hasExercises) {
             const exercisesByCategory = State.groupExercisesByCategory(filteredExercises);
             Object.keys(exercisesByCategory).sort().forEach(category => {
               const details = document.createElement('details');
@@ -1439,7 +1490,22 @@
             DOM.dialogCancelBtn.addEventListener('click', cancelHandler, { once: true });
           });
         },
-        announce(message) { DOM.announcer.textContent = message; }
+        announce(message) { DOM.announcer.textContent = message; },
+        
+        // Targeted update methods to avoid full re-renders
+        updateHistoryOnly() {
+          DOM.historyContainer.setAttribute('aria-busy', 'true');
+          this.renderHistory();
+          DOM.historyContainer.setAttribute('aria-busy', 'false');
+        },
+        
+        updateManageExerciseListOnly() {
+          this.renderManageExerciseList();
+        },
+        
+        updateLogFormOnly() {
+          this.renderLogForm();
+        }
       };
 
       // ===================================================================================
@@ -1447,17 +1513,13 @@
       // ===================================================================================
       const Events = {
         restTimerInterval: null,
-        TIMER_ADJUST_STEP: 10, // seconds to add/subtract
-        TIMER_MIN_DURATION: 10, // minimum timer duration in seconds
-        TIMER_MAX_DURATION: 600, // maximum timer duration in seconds (10 minutes)
-        TIMER_UPDATE_INTERVAL: 100, // milliseconds between display updates
-        TIMER_WARNING_THRESHOLD: 10, // seconds remaining to show warning
-        TIMER_AUTO_RESET_DELAY: 2000, // milliseconds before auto-resetting after completion
         
         // Helper to format seconds as M:SS
         formatTime(totalSeconds) {
-          const minutes = Math.floor(totalSeconds / 60);
-          const seconds = totalSeconds % 60;
+          // Ensure valid input
+          const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+          const minutes = Math.floor(safeSeconds / 60);
+          const seconds = safeSeconds % 60;
           return `${minutes}:${seconds.toString().padStart(2, '0')}`;
         },
         
@@ -1497,17 +1559,43 @@
         },
         resumeRestTimerIfRunning() {
           const timer = State.getRestTimer();
+          
+          // Validate timer state before attempting to resume
+          if (!timer || typeof timer.remaining !== 'number' || typeof timer.duration !== 'number') {
+            // Invalid timer state - reset to defaults
+            State.setRestTimer({ running: false, paused: false, remaining: 60, duration: 60 });
+            State.save();
+            this.updateRestTimerDisplay();
+            return;
+          }
+          
           if (timer.running && !timer.paused) {
-            const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
+            const now = Date.now();
+            const elapsed = Math.floor((now - timer.startTime) / 1000);
             const remaining = Math.max(0, timer.remaining - elapsed);
             
-            if (remaining > 0) {
-              State.setRestTimer({ startTime: Date.now(), remaining });
-              DOM.restTimerPause.textContent = 'Pause';
-              this.startRestTimerInterval();
-            } else {
+            // If timer expired during page reload, complete it
+            if (remaining <= 0) {
               this.handleRestTimerComplete();
+              return;
             }
+            
+            // If elapsed time is suspiciously large (>1 hour), reset timer
+            // This prevents errors from clock changes or very long page closures
+            if (elapsed > 3600) {
+              State.setRestTimer({ running: false, paused: false, remaining: timer.duration });
+              State.save();
+              DOM.restTimerPause.textContent = 'Start';
+              this.updateRestTimerDisplay();
+              UI.announce('Timer was reset due to long inactivity.');
+              return;
+            }
+            
+            // Resume with corrected time
+            State.setRestTimer({ startTime: now, remaining });
+            State.save();
+            DOM.restTimerPause.textContent = 'Pause';
+            this.startRestTimerInterval();
           } else if (timer.paused) {
             DOM.restTimerPause.textContent = 'Resume';
           }
@@ -1522,49 +1610,53 @@
         },
         adjustRestTimer(delta) {
           const timer = State.getRestTimer();
+          const constants = State.getConstants();
           const isRunning = timer.running && !timer.paused;
           
           if (isRunning) {
             const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
             const currentRemaining = Math.max(0, timer.remaining - elapsed);
-            const newRemaining = Math.max(0, Math.min(this.TIMER_MAX_DURATION, currentRemaining + delta));
+            const newRemaining = Math.max(0, Math.min(constants.TIMER_MAX_DURATION, currentRemaining + delta));
             State.setRestTimer({ startTime: Date.now(), remaining: newRemaining });
+            State.save();
             UI.announce(`${Math.abs(delta)} seconds ${delta > 0 ? 'added' : 'removed'}`);
           } else {
-            const newDuration = Math.max(this.TIMER_MIN_DURATION, Math.min(this.TIMER_MAX_DURATION, timer.duration + delta));
+            const newDuration = Math.max(constants.TIMER_MIN_DURATION, Math.min(constants.TIMER_MAX_DURATION, timer.duration + delta));
             State.setRestTimer({ duration: newDuration, remaining: newDuration });
+            State.save();
             UI.announce(`Rest duration set to ${newDuration} seconds`);
           }
-          State.save();
           this.updateRestTimerDisplay();
         },
         handleRestTimerDecrease() {
-          this.adjustRestTimer(-this.TIMER_ADJUST_STEP);
+          const constants = State.getConstants();
+          this.adjustRestTimer(-constants.TIMER_ADJUST_STEP);
         },
         handleRestTimerIncrease() {
-          this.adjustRestTimer(this.TIMER_ADJUST_STEP);
+          const constants = State.getConstants();
+          this.adjustRestTimer(constants.TIMER_ADJUST_STEP);
         },
         handleRestTimerPause() {
           const timer = State.getRestTimer();
           if (!timer.running) {
             const startingRemaining = timer.remaining || timer.duration;
             State.setRestTimer({ running: true, paused: false, startTime: Date.now(), remaining: startingRemaining });
-            DOM.restTimerPause.textContent = 'Pause';
             State.save();
+            DOM.restTimerPause.textContent = 'Pause';
             this.startRestTimerInterval();
             UI.announce('Timer started');
           } else if (timer.paused) {
             State.setRestTimer({ paused: false, startTime: Date.now() });
-            DOM.restTimerPause.textContent = 'Pause';
             State.save();
+            DOM.restTimerPause.textContent = 'Pause';
             this.startRestTimerInterval();
             UI.announce('Timer resumed');
           } else {
             const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
             const remaining = Math.max(0, timer.remaining - elapsed);
             State.setRestTimer({ paused: true, remaining });
-            DOM.restTimerPause.textContent = 'Resume';
             State.save();
+            DOM.restTimerPause.textContent = 'Resume';
             if (this.restTimerInterval) {
               clearInterval(this.restTimerInterval);
             }
@@ -1589,10 +1681,19 @@
             clearInterval(this.restTimerInterval);
           }
           this.updateRestTimerDisplay();
-          this.restTimerInterval = setInterval(() => this.updateRestTimerDisplay(), this.TIMER_UPDATE_INTERVAL);
+          const constants = State.getConstants();
+          this.restTimerInterval = setInterval(() => this.updateRestTimerDisplay(), constants.TIMER_UPDATE_INTERVAL);
         },
         updateRestTimerDisplay() {
           const timer = State.getRestTimer();
+          
+          // Validate timer state
+          if (!timer || typeof timer.remaining !== 'number' || typeof timer.duration !== 'number') {
+            // Invalid state - show default and reset
+            DOM.restTimerDisplay.textContent = '1:00';
+            DOM.restTimerToggleDisplay.textContent = '1:00';
+            return;
+          }
           
           let remainingSeconds;
           if (!timer.running) {
@@ -1609,21 +1710,26 @@
             }
           }
           
+          // Ensure remainingSeconds is valid
+          remainingSeconds = Math.max(0, Math.min(remainingSeconds, 9999));
+          
           const timeString = this.formatTime(remainingSeconds);
           DOM.restTimerDisplay.textContent = timeString;
           DOM.restTimerToggleDisplay.textContent = timeString;
           
           DOM.restTimerDisplay.classList.remove('warning', 'complete');
           if (timer.running && !timer.paused) {
+            const constants = State.getConstants();
             if (remainingSeconds === 0) {
               DOM.restTimerDisplay.classList.add('complete');
-            } else if (remainingSeconds <= this.TIMER_WARNING_THRESHOLD) {
+            } else if (remainingSeconds <= constants.TIMER_WARNING_THRESHOLD) {
               DOM.restTimerDisplay.classList.add('warning');
             }
           }
         },
         handleRestTimerComplete() {
           State.setRestTimer({ running: false, paused: false, remaining: 0 });
+          State.save();
           DOM.restTimerPause.textContent = 'Start';
           DOM.restTimerDisplay.classList.add('complete');
           if (this.restTimerInterval) {
@@ -1632,21 +1738,30 @@
           this.updateRestTimerDisplay();
           UI.announce('Rest time complete!');
           
-          if ('vibrate' in navigator) {
-            navigator.vibrate([200, 100, 200]);
+          const constants = State.getConstants();
+          try {
+            if ('vibrate' in navigator) {
+              navigator.vibrate(constants.TIMER_VIBRATION_PATTERN);
+            }
+          } catch (error) {
+            // Vibration not supported or failed - ignore silently
           }
           
           setTimeout(() => {
             if (!State.getRestTimer().running) {
               this.handleRestTimerReset();
             }
-          }, this.TIMER_AUTO_RESET_DELAY);
+          }, constants.TIMER_AUTO_RESET_DELAY);
         },
         handleTabClick(event) {
-          if (event.target.closest('[role="tab"]')) {
-            State.setActiveTab(event.target.closest('[role="tab"]').id.replace('-tab', ''));
+          const tab = event.target.closest('[role="tab"]');
+          if (tab) {
+            const tabName = tab.id.replace('-tab', '');
+            State.setActiveTab(tabName);
             State.save();
             UI.renderTabs();
+            const tabLabel = tabName === 'log' ? 'Log Workout' : 'Manage Exercises';
+            UI.announce(`Switched to ${tabLabel} tab.`);
           }
         },
         handleLogFormInput(event) {
@@ -1660,8 +1775,8 @@
             State.setLogFormField('exerciseId', '');
             this.clearFormInputs();
             UI.updateLogFormVisibility();
-            // Update history to show exercises from selected muscle group
-            UI.renderHistory();
+            // Update history to show exercises from selected muscle group (targeted update)
+            UI.updateHistoryOnly();
           } else if (id === 'log-exercise') {
             // Populate form values from most recent history entry if available
             const mostRecent = State.getMostRecentActivity(value);
@@ -1677,7 +1792,8 @@
             
             State.save();
             UI.updateLogFormVisibility();
-            UI.renderHistory();
+            // Targeted update instead of full render
+            UI.updateHistoryOnly();
             this.updateExerciseInfo();
           }
         },
@@ -1695,11 +1811,12 @@
           // Hide exercise field group
           DOM.logExerciseGroup.hidden = true;
           
-          // Save state and update UI
+          // Save state and update UI (targeted updates)
           State.save();
           UI.updateLogFormVisibility();
-          UI.renderHistory();
+          UI.updateHistoryOnly();
           this.updateExerciseInfo();
+          UI.announce('History filter cleared.');
         },
         updateExerciseInfo() {
           const { logForm } = State.get();
@@ -1719,6 +1836,7 @@
           DOM.exerciseInfoPanel.classList.toggle('show');
           DOM.exerciseInfoToggle.classList.toggle('active');
           DOM.exerciseInfoToggle.setAttribute('aria-label', isShowing ? 'Show exercise information' : 'Hide exercise information');
+          UI.announce(isShowing ? 'Exercise information hidden.' : 'Exercise information shown.');
         },
         handleLogFormSubmit(event) {
           event.preventDefault();
@@ -1729,18 +1847,43 @@
           const { logForm } = State.get();
           const exercise = State.findExercise(logForm.exerciseId);
           
+          // Validate exercise exists
+          if (!exercise) {
+            UI.showDialog({ title: 'Error', message: 'Selected exercise not found. Please select a valid exercise.', confirmText: 'OK', showCancel: false });
+            UI.announce('Error: Selected exercise not found.');
+            return;
+          }
+          
+          // Parse and validate numeric inputs
+          const weight = parseFloat(DOM.logInputs.weight.value || 0);
+          const reps = parseInt(DOM.logInputs.reps.value, 10);
+          
+          // Validate numeric values are valid and within reasonable ranges
+          if (isNaN(weight) || weight < 0 || weight > 9999) {
+            UI.showDialog({ title: 'Invalid Weight', message: 'Please enter a valid weight between 0 and 9999 kg.', confirmText: 'OK', showCancel: false });
+            UI.announce('Invalid weight value.');
+            return;
+          }
+          
+          if (isNaN(reps) || reps < 1 || reps > 9999) {
+            UI.showDialog({ title: 'Invalid Reps', message: 'Please enter a valid number of reps between 1 and 9999.', confirmText: 'OK', showCancel: false });
+            UI.announce('Invalid reps value.');
+            return;
+          }
+          
           // All exercises use weight + reps
           const newActivity = {
             id: State.generateId('act'),
             exerciseId: exercise.id,
             timestamp: Date.now(),
-            weight: parseFloat(DOM.logInputs.weight.value || 0),
-            reps: parseInt(DOM.logInputs.reps.value, 10)
+            weight,
+            reps
           };
           
           State.addHistoryItem(newActivity);
           State.save();
-          UI.renderHistory();
+          // Targeted update instead of full render
+          UI.updateHistoryOnly();
           UI.announce(`${exercise.name} logged successfully.`);
           
           // Blur any focused input to dismiss mobile keyboard
@@ -1752,11 +1895,13 @@
           event.preventDefault();
           if (!DOM.addExerciseForm.checkValidity()) {
             DOM.addExerciseForm.reportValidity();
+            UI.announce('Please fill in all required fields.');
             return;
           }
           const name = DOM.newExerciseInputs.name.value.trim();
           if (State.exerciseNameExists(name)) {
             UI.showDialog({ title: 'Duplicate Exercise', message: `An exercise with the name "${name}" already exists.`, confirmText: 'OK', showCancel: false });
+            UI.announce(`Exercise name "${name}" already exists.`);
             return;
           }
           // All exercises use weight_reps type
@@ -1785,10 +1930,12 @@
           
           if (action === 'edit') {
             State.setEditingExercise(exerciseId);
-            UI.renderManageExerciseList();
+            UI.updateManageExerciseListOnly();
+            UI.announce(`Editing ${exercise.name}.`);
           } else if (action === 'cancel') {
             State.setEditingExercise(null);
-            UI.renderManageExerciseList();
+            UI.updateManageExerciseListOnly();
+            UI.announce('Edit cancelled.');
           } else if (action === 'save') {
             const getField = (field) => DOM.manageExerciseList.querySelector(`#edit-exercise-${field}-${exerciseId}`).value.trim();
             const newName = getField('name');
@@ -1797,6 +1944,7 @@
             
             if (!newName || State.exerciseNameExists(newName, exerciseId)) {
               UI.showDialog({ title: 'Invalid Name', message: 'Exercise name cannot be empty or a duplicate.', confirmText: 'OK', showCancel: false });
+              UI.announce('Exercise name is invalid or already exists.');
               return;
             }
             
@@ -1808,7 +1956,7 @@
             });
             State.setEditingExercise(null);
             State.save();
-            UI.renderManageExerciseList();
+            UI.updateManageExerciseListOnly();
             UI.announce(`${newName} saved successfully.`);
           } else if (action === 'delete') {
             UI.showDialog({ 
@@ -1817,10 +1965,13 @@
               confirmText: 'Delete' 
             }).then(confirmed => {
               if (confirmed) {
+                const exerciseName = exercise.name;
                 State.deleteExercise(exerciseId);
                 State.save();
                 UI.render();
-                UI.announce(`${exercise.name} deleted.`);
+                UI.announce(`${exerciseName} deleted.`);
+              } else {
+                UI.announce('Deletion cancelled.');
               }
             });
           }
@@ -1828,7 +1979,7 @@
         handleSettingsFilterInput(event) {
           State.setFilter(event.target.value);
           State.setEditingExercise(null);
-          UI.renderManageExerciseList();
+          UI.updateManageExerciseListOnly();
         },
         handleMenuToggle(event) {
           event.stopPropagation();
