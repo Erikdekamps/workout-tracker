@@ -874,13 +874,21 @@
               </select>
             </div>
             <div id="exercise-info-panel" class="exercise-info-panel"></div>
-            <div class="form-group" id="log-weight-group" hidden>
-              <label for="log-weight" class="form-group__label">Weight (kg)</label><input type="number" id="log-weight"
-                class="input" name="weight" min="0" max="9999" step="0.5" placeholder="20" pattern="[0-9]*" inputmode="numeric">
+            <div class="form-group form-group--full-width" id="log-weight-group" hidden>
+              <label for="log-weight" class="form-group__label">Weight (kg)</label>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <button type="button" id="log-weight-decrease" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;" aria-label="Decrease weight by 2.5 kg">−</button>
+                <input type="number" id="log-weight" class="input" name="weight" min="0" max="9999" step="0.5" placeholder="20" pattern="[0-9]*" inputmode="numeric" style="flex: 1; text-align: center;">
+                <button type="button" id="log-weight-increase" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;" aria-label="Increase weight by 2.5 kg">+</button>
+              </div>
             </div>
-            <div class="form-group" id="log-reps-group" hidden>
-              <label for="log-reps" class="form-group__label">Reps</label><input type="number" id="log-reps"
-                class="input" name="reps" min="1" max="9999" step="1" placeholder="10" pattern="[0-9]*" inputmode="numeric">
+            <div class="form-group form-group--full-width" id="log-reps-group" hidden>
+              <label for="log-reps" class="form-group__label">Reps</label>
+              <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <button type="button" id="log-reps-decrease" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;" aria-label="Decrease reps by 1">−</button>
+                <input type="number" id="log-reps" class="input" name="reps" min="1" max="9999" step="1" placeholder="10" pattern="[0-9]*" inputmode="numeric" style="flex: 1; text-align: center;">
+                <button type="button" id="log-reps-increase" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;" aria-label="Increase reps by 1">+</button>
+              </div>
             </div>
             <button type="submit" class="button button--primary form-group--full-width">Log Activity</button>
           </form>
@@ -1170,6 +1178,10 @@
           this.exerciseInfoPanel = get('exercise-info-panel');
           this.logGroups = { weight: get('log-weight-group'), reps: get('log-reps-group') };
           this.logInputs = { weight: get('log-weight'), reps: get('log-reps') };
+          this.logWeightDecrease = get('log-weight-decrease');
+          this.logWeightIncrease = get('log-weight-increase');
+          this.logRepsDecrease = get('log-reps-decrease');
+          this.logRepsIncrease = get('log-reps-increase');
           this.historyContainer = get('history-container');
           this.historyList = get('history-list');
           this.historyTitle = get('history-title');
@@ -1598,6 +1610,10 @@
           DOM.restTimerIncrease.addEventListener('click', this.handleRestTimerIncrease.bind(this));
           DOM.restTimerPause.addEventListener('click', this.handleRestTimerPause.bind(this));
           DOM.restTimerReset.addEventListener('click', this.handleRestTimerReset.bind(this));
+          DOM.logWeightDecrease.addEventListener('click', this.handleLogWeightDecrease.bind(this));
+          DOM.logWeightIncrease.addEventListener('click', this.handleLogWeightIncrease.bind(this));
+          DOM.logRepsDecrease.addEventListener('click', this.handleLogRepsDecrease.bind(this));
+          DOM.logRepsIncrease.addEventListener('click', this.handleLogRepsIncrease.bind(this));
           DOM.addExerciseForm.addEventListener('submit', this.handleAddExerciseFormSubmit.bind(this));
           DOM.manageExerciseList.addEventListener('click', this.handleManageListClick.bind(this));
           DOM.newExerciseInputs.name.addEventListener('input', this.handleSettingsFilterInput.bind(this));
@@ -1905,6 +1921,26 @@
           DOM.exerciseInfoToggle.classList.toggle('active');
           DOM.exerciseInfoToggle.setAttribute('aria-label', isShowing ? 'Show exercise information' : 'Hide exercise information');
           UI.announce(isShowing ? 'Exercise information hidden.' : 'Exercise information shown.');
+        },
+        handleLogWeightDecrease() {
+          const currentValue = parseFloat(DOM.logInputs.weight.value) || 0;
+          const newValue = Math.max(0, currentValue - 2.5);
+          DOM.logInputs.weight.value = newValue;
+        },
+        handleLogWeightIncrease() {
+          const currentValue = parseFloat(DOM.logInputs.weight.value) || 0;
+          const newValue = Math.min(9999, currentValue + 2.5);
+          DOM.logInputs.weight.value = newValue;
+        },
+        handleLogRepsDecrease() {
+          const currentValue = parseInt(DOM.logInputs.reps.value) || 0;
+          const newValue = Math.max(1, currentValue - 1);
+          DOM.logInputs.reps.value = newValue;
+        },
+        handleLogRepsIncrease() {
+          const currentValue = parseInt(DOM.logInputs.reps.value) || 0;
+          const newValue = Math.min(9999, currentValue + 1);
+          DOM.logInputs.reps.value = newValue;
         },
         handleLogFormSubmit(event) {
           event.preventDefault();
