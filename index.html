@@ -791,7 +791,14 @@
       </nav>
       <section id="log-panel" class="panel" role="tabpanel" aria-labelledby="log-tab">
         <div class="card">
-          <h2 class="card__title" id="log-form-title">Log an Activity</h2>
+          <div class="card__title-container">
+            <h2 class="card__title" id="log-form-title">Log an Activity</h2>
+            <button type="button" class="button button--icon" id="clear-history-filter" aria-label="Clear filter" style="display: none;">
+              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
+              </svg>
+            </button>
+          </div>
           <form id="log-form" class="form form--log" novalidate aria-labelledby="log-form-title">
             <div class="form-group form-group--full-width">
               <label for="log-muscle-group" class="form-group__label">Muscle Group</label>
@@ -851,14 +858,7 @@
         </div>
 
         <div class="card" id="history-card">
-          <div class="card__title-container">
-            <h2 class="card__title" id="history-title">History</h2>
-            <button type="button" class="button button--icon" id="clear-history-filter" hidden aria-label="Clear filter">
-              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
-              </svg>
-            </button>
-          </div>
+          <h2 class="card__title" id="history-title">History</h2>
           <div id="history-container" role="feed" aria-busy="false">
             <div id="history-list" class="collapsible-list"></div>
             <p id="history-empty-state">No activities logged yet. Let's get to work!</p>
@@ -1242,10 +1242,10 @@
           const filterExerciseId = logForm.exerciseId;
           const selectedMuscleGroup = DOM.logMuscleGroupSelect.value;
           let historyToRender = history;
-          const isFiltered = filterExerciseId || selectedMuscleGroup;
+          const isFiltered = !!(filterExerciseId && filterExerciseId !== '') || !!(selectedMuscleGroup && selectedMuscleGroup !== '');
           
           // Show/hide clear filter button
-          DOM.clearHistoryFilter.hidden = !isFiltered;
+          DOM.clearHistoryFilter.style.display = isFiltered ? 'inline-flex' : 'none';
           
           // Filter by specific exercise if selected
           if (filterExerciseId) {
