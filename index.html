@@ -1588,23 +1588,9 @@
       const Events = {
         restTimerInterval: null,
         
-        // Helper to format seconds as M:SS
-        formatTime(totalSeconds) {
-          // Ensure valid input
-          const safeSeconds = Math.max(0, Math.floor(totalSeconds));
-          const minutes = Math.floor(safeSeconds / 60);
-          const seconds = safeSeconds % 60;
-          return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        },
-        
-        // Helper to clear all form inputs
-        clearFormInputs() {
-          DOM.logInputs.weight.value = '';
-          DOM.logInputs.reps.value = '';
-          State.setLogFormField('weight', '');
-          State.setLogFormField('reps', '');
-        },
-        
+        // ===================================================================================
+        // INITIALIZATION
+        // ===================================================================================
         init() {
           DOM.tabs.addEventListener('click', this.handleTabClick.bind(this));
           DOM.logForm.addEventListener('submit', this.handleLogFormSubmit.bind(this));
@@ -1630,6 +1616,48 @@
           this.updateRestTimerDisplay();
           this.resumeRestTimerIfRunning();
         },
+        
+        // ===================================================================================
+        // HELPER FUNCTIONS
+        // ===================================================================================
+        formatTime(totalSeconds) {
+          const safeSeconds = Math.max(0, Math.floor(totalSeconds));
+          const minutes = Math.floor(safeSeconds / 60);
+          const seconds = safeSeconds % 60;
+          return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        },
+        
+        clearFormInputs() {
+          DOM.logInputs.weight.value = '';
+          DOM.logInputs.reps.value = '';
+          State.setLogFormField('weight', '');
+          State.setLogFormField('reps', '');
+        },
+        
+        adjustValue(inputElement, delta, min, max, isInteger = false) {
+          const currentValue = isInteger ? parseInt(inputElement.value) || 0 : parseFloat(inputElement.value) || 0;
+          const newValue = Math.max(min, Math.min(max, currentValue + delta));
+          return isInteger ? Math.floor(newValue) : newValue;
+        },
+        
+        // ===================================================================================
+        // TAB NAVIGATION
+        // ===================================================================================
+        handleTabClick(event) {
+          const tab = event.target.closest('[role="tab"]');
+          if (tab) {
+            const tabName = tab.id.replace('-tab', '');
+            State.setActiveTab(tabName);
+            State.save();
+            UI.renderTabs();
+            const tabLabel = tabName === 'log' ? 'Log Workout' : 'Manage Exercises';
+            UI.announce(`Switched to ${tabLabel} tab.`);
+          }
+        },
+        
+        // ===================================================================================
+        // REST TIMER HANDLERS
+        // ===================================================================================
         resumeRestTimerIfRunning() {
           const timer = State.getRestTimer();
           
@@ -1844,17 +1872,10 @@
             }
           }, constants.TIMER_AUTO_RESET_DELAY);
         },
-        handleTabClick(event) {
-          const tab = event.target.closest('[role="tab"]');
-          if (tab) {
-            const tabName = tab.id.replace('-tab', '');
-            State.setActiveTab(tabName);
-            State.save();
-            UI.renderTabs();
-            const tabLabel = tabName === 'log' ? 'Log Workout' : 'Manage Exercises';
-            UI.announce(`Switched to ${tabLabel} tab.`);
-          }
-        },
+        
+        // ===================================================================================
+        // LOG FORM HANDLERS
+        // ===================================================================================
         handleLogFormInput(event) {
           const { name, value, id } = event.target;
           State.setLogFormField(name, value);
@@ -1938,29 +1959,28 @@
           UI.announce(isShowing ? 'Exercise information hidden.' : 'Exercise information shown.');
         },
         handleLogWeightDecrease() {
-          const currentValue = parseFloat(DOM.logInputs.weight.value) || 0;
-          const newValue = Math.max(0, currentValue - 2.5);
+          const newValue = this.adjustValue(DOM.logInputs.weight, -2.5, 0, 9999);
           DOM.logInputs.weight.value = newValue;
           State.setLogFormField('weight', newValue);
           State.save();
         },
+        
         handleLogWeightIncrease() {
-          const currentValue = parseFloat(DOM.logInputs.weight.value) || 0;
-          const newValue = Math.min(9999, currentValue + 2.5);
+          const newValue = this.adjustValue(DOM.logInputs.weight, 2.5, 0, 9999);
           DOM.logInputs.weight.value = newValue;
           State.setLogFormField('weight', newValue);
           State.save();
         },
+        
         handleLogRepsDecrease() {
-          const currentValue = parseInt(DOM.logInputs.reps.value) || 0;
-          const newValue = Math.max(1, currentValue - 1);
+          const newValue = this.adjustValue(DOM.logInputs.reps, -1, 1, 9999, true);
           DOM.logInputs.reps.value = newValue;
           State.setLogFormField('reps', newValue);
           State.save();
         },
+        
         handleLogRepsIncrease() {
-          const currentValue = parseInt(DOM.logInputs.reps.value) || 0;
-          const newValue = Math.min(9999, currentValue + 1);
+          const newValue = this.adjustValue(DOM.logInputs.reps, 1, 1, 9999, true);
           DOM.logInputs.reps.value = newValue;
           State.setLogFormField('reps', newValue);
           State.save();
@@ -2018,6 +2038,10 @@
             document.activeElement.blur();
           }
         },
+        
+        // ===================================================================================
+        // MANAGE EXERCISES HANDLERS
+        // ===================================================================================
         handleAddExerciseFormSubmit(event) {
           event.preventDefault();
           if (!DOM.addExerciseForm.checkValidity()) {
@@ -2108,18 +2132,24 @@
           State.setEditingExercise(null);
           UI.updateManageExerciseListOnly();
         },
+        
+        // ===================================================================================
+        // MENU & MISCELLANEOUS HANDLERS
+        // ===================================================================================
         handleMenuToggle(event) {
           event.stopPropagation();
           const isExpanded = DOM.manageExercisesMenu.classList.contains('show');
           DOM.manageExercisesMenu.classList.toggle('show');
           DOM.manageExercisesMenuToggle.setAttribute('aria-expanded', !isExpanded);
         },
+        
         handleOutsideClick(event) {
           if (!event.target.closest('.dropdown')) {
             DOM.manageExercisesMenu.classList.remove('show');
             DOM.manageExercisesMenuToggle.setAttribute('aria-expanded', 'false');
           }
         },
+        
         handleResetExercises() {
           DOM.manageExercisesMenu.classList.remove('show');
           DOM.manageExercisesMenuToggle.setAttribute('aria-expanded', 'false');
