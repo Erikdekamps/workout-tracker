@@ -1396,19 +1396,24 @@
           DOM.manageExerciseList.hidden = !hasExercises;
           
           if (hasExercises) {
-            const exercisesByCategory = State.groupExercisesByCategory(filteredExercises);
-            Object.keys(exercisesByCategory).sort().forEach(category => {
-              const details = document.createElement('details');
-              if (settings.filter) { details.open = true; } // Open when filtering
-              const summary = document.createElement('summary');
-              summary.className = 'collapsible-group__summary';
-              summary.textContent = `${category} (${exercisesByCategory[category].length} exercise${exercisesByCategory[category].length > 1 ? 's' : ''})`;
-              const list = document.createElement('ul');
-              list.className = 'collapsible-group__list';
-              exercisesByCategory[category].sort((a, b) => a.name.localeCompare(b.name)).forEach(ex => list.appendChild(this._createExerciseListItem(ex)));
-              details.append(summary, list);
-              DOM.manageExerciseList.appendChild(details);
+            // Sort by category first, then by name within category
+            const sortedExercises = [...filteredExercises].sort((a, b) => {
+              if (a.category !== b.category) {
+                return a.category.localeCompare(b.category);
+              }
+              return a.name.localeCompare(b.name);
             });
+            
+            // Create a flat list with ul
+            const list = document.createElement('ul');
+            list.className = 'collapsible-group__list';
+            list.style.padding = '0';
+            
+            sortedExercises.forEach(ex => {
+              list.appendChild(this._createExerciseListItem(ex));
+            });
+            
+            DOM.manageExerciseList.appendChild(list);
           }
         },
         _createExerciseListItem(exercise) {
@@ -1427,7 +1432,7 @@
           mainDiv.className = 'exercise-list__item-main';
           const nameSpan = document.createElement('span');
           nameSpan.className = 'exercise-list__name';
-          nameSpan.textContent = exercise.name;
+          nameSpan.textContent = `${exercise.category}: ${exercise.name}`;
           mainDiv.appendChild(nameSpan);
           const actionsDiv = document.createElement('div');
           actionsDiv.className = 'exercise-list__actions';
