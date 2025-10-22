@@ -739,12 +739,24 @@
       min-width: 100px;
     }
 
+    .rest-timer__display.warning-yellow {
+      color: #eab308 !important;
+    }
+
+    .rest-timer__display.warning-orange {
+      color: #f97316 !important;
+    }
+
+    .rest-timer__display.warning-red {
+      color: #ef4444 !important;
+    }
+
     .rest-timer__display.warning {
-      color: #f59e0b;
+      color: #f59e0b !important;
     }
 
     .rest-timer__display.complete {
-      color: #10b981;
+      color: #10b981 !important;
     }
 
     .rest-timer__controls {
@@ -982,6 +994,9 @@
           TIMER_MAX_DURATION: 600, // maximum timer duration in seconds (10 minutes)
           TIMER_UPDATE_INTERVAL: 100, // milliseconds between display updates
           TIMER_WARNING_THRESHOLD: 10, // seconds remaining to show warning
+          TIMER_WARNING_YELLOW: 20, // seconds for yellow warning
+          TIMER_WARNING_ORANGE: 10, // seconds for orange warning
+          TIMER_WARNING_RED: 5, // seconds for red warning
           TIMER_AUTO_RESET_DELAY: 2000, // milliseconds before auto-resetting after completion
           // Vibration pattern for timer completion
           TIMER_VIBRATION_PATTERN: [200, 100, 200]
@@ -1819,13 +1834,17 @@
           const timeString = this.formatTime(remainingSeconds);
           DOM.restTimerDisplay.textContent = timeString;
           
-          DOM.restTimerDisplay.classList.remove('warning', 'complete');
+          DOM.restTimerDisplay.classList.remove('warning', 'warning-yellow', 'warning-orange', 'warning-red', 'complete');
           if (timer.running && !timer.paused) {
             const constants = State.getConstants();
             if (remainingSeconds === 0) {
               DOM.restTimerDisplay.classList.add('complete');
-            } else if (remainingSeconds <= constants.TIMER_WARNING_THRESHOLD) {
-              DOM.restTimerDisplay.classList.add('warning');
+            } else if (remainingSeconds <= constants.TIMER_WARNING_RED) {
+              DOM.restTimerDisplay.classList.add('warning-red');
+            } else if (remainingSeconds <= constants.TIMER_WARNING_ORANGE) {
+              DOM.restTimerDisplay.classList.add('warning-orange');
+            } else if (remainingSeconds <= constants.TIMER_WARNING_YELLOW) {
+              DOM.restTimerDisplay.classList.add('warning-yellow');
             }
           }
         },
