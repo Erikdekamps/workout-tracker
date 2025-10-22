@@ -710,64 +710,134 @@
       transition: opacity 0.3s ease;
     }
 
+    .rest-timer__panel {
+      padding: 1rem 0;
+    }
+
     .rest-timer__display-container {
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 0.5rem;
-      margin-bottom: 0.75rem;
     }
 
-    .rest-timer__adjust-btn {
-      width: 36px;
-      height: 36px;
-      padding: 0;
+    .rest-timer__circle {
+      position: relative;
+      width: 180px;
+      height: 180px;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      font-size: 1.25rem;
-      font-weight: 700;
-      flex-shrink: 0;
+    }
+
+    .rest-timer__svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .rest-timer__circle-bg {
+      fill: none;
+      stroke: var(--color-border);
+      stroke-width: 6;
+    }
+
+    .rest-timer__circle-progress {
+      fill: none;
+      stroke: var(--color-primary);
+      stroke-width: 6;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.3s linear, stroke 0.3s;
+    }
+
+    .rest-timer__circle-progress.warning-yellow {
+      stroke: #eab308;
+    }
+
+    .rest-timer__circle-progress.warning-orange {
+      stroke: #f97316;
+    }
+
+    .rest-timer__circle-progress.warning-red {
+      stroke: #ef4444;
+    }
+
+    .rest-timer__circle-progress.complete {
+      stroke: #10b981;
+    }
+
+    .rest-timer__content {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      z-index: 1;
     }
 
     .rest-timer__display {
-      font-size: 2rem;
+      font-size: 2.5rem;
       font-weight: 700;
       text-align: center;
       color: var(--color-primary);
       font-variant-numeric: tabular-nums;
-      min-width: 100px;
+      cursor: pointer;
+      user-select: none;
+      transition: opacity 0.2s;
+    }
+
+    .rest-timer__display:hover {
+      opacity: 0.8;
     }
 
     .rest-timer__display.warning-yellow {
-      color: #eab308 !important;
+      color: #eab308;
     }
 
     .rest-timer__display.warning-orange {
-      color: #f97316 !important;
+      color: #f97316;
     }
 
     .rest-timer__display.warning-red {
-      color: #ef4444 !important;
-    }
-
-    .rest-timer__display.warning {
-      color: #f59e0b !important;
+      color: #ef4444;
     }
 
     .rest-timer__display.complete {
-      color: #10b981 !important;
+      color: #10b981;
     }
 
     .rest-timer__controls {
       display: flex;
-      gap: 0.5rem;
+      gap: 1rem;
+      align-items: center;
     }
 
-    .rest-timer__controls .button {
-      flex: 1;
-      padding: 0.5rem;
-      font-size: 0.875rem;
+    .rest-timer__icon-btn {
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: var(--color-text-secondary);
+      transition: color 0.2s, transform 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .rest-timer__icon-btn:hover {
+      color: var(--color-primary);
+      transform: scale(1.1);
+    }
+
+    .rest-timer__icon-btn:active {
+      transform: scale(0.95);
+    }
+
+    .rest-timer__icon-btn--reset:hover {
+      color: var(--color-danger);
     }
 
     @media (max-width: 640px) {
@@ -863,15 +933,30 @@
         </div>
 
         <div class="card">
-          <div style="padding: 0.5rem 0;">
-            <div class="rest-timer__display-container" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin-bottom: 1rem;">
-              <button id="rest-timer-decrease" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700;" aria-label="Decrease time by 10 seconds">−</button>
-              <div class="rest-timer__display" id="rest-timer-display" style="font-size: 3rem; font-weight: 700; text-align: center; color: var(--color-primary); font-variant-numeric: tabular-nums; min-width: 150px;">1:00</div>
-              <button id="rest-timer-increase" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700;" aria-label="Increase time by 10 seconds">+</button>
-            </div>
-            <div class="rest-timer__controls" style="display: flex; gap: 0.5rem;">
-              <button id="rest-timer-pause" class="button button--primary" style="flex: 1;">Start</button>
-              <button id="rest-timer-reset" class="button button--secondary" style="flex: 1;">Reset</button>
+          <div class="rest-timer__panel">
+            <div class="rest-timer__display-container">
+              <div class="rest-timer__circle">
+                <svg class="rest-timer__svg" viewBox="0 0 180 180">
+                  <circle class="rest-timer__circle-bg" cx="90" cy="90" r="85"></circle>
+                  <circle id="rest-timer-progress" class="rest-timer__circle-progress" cx="90" cy="90" r="85" stroke-dasharray="534.07" stroke-dashoffset="0"></circle>
+                </svg>
+                <div class="rest-timer__content">
+                  <div class="rest-timer__display" id="rest-timer-display" role="button" tabindex="0" aria-label="Click to start or pause timer">1:00</div>
+                  <div class="rest-timer__controls">
+                    <button id="rest-timer-pause" class="rest-timer__icon-btn" aria-label="Pause timer">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
+                      </svg>
+                    </button>
+                    <button id="rest-timer-stop" class="rest-timer__icon-btn rest-timer__icon-btn--reset" aria-label="Reset timer">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                        <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -1182,10 +1267,9 @@
           this.dialogConfirmBtn = get('dialog-confirm-btn');
           this.dialogCancelBtn = get('dialog-cancel-btn');
           this.restTimerDisplay = get('rest-timer-display');
-          this.restTimerDecrease = get('rest-timer-decrease');
-          this.restTimerIncrease = get('rest-timer-increase');
+          this.restTimerProgress = get('rest-timer-progress');
           this.restTimerPause = get('rest-timer-pause');
-          this.restTimerReset = get('rest-timer-reset');
+          this.restTimerStop = get('rest-timer-stop');
           this.manageExercisesMenuToggle = get('manage-exercises-menu-toggle');
           this.manageExercisesMenu = get('manage-exercises-menu');
           this.resetExercisesBtn = get('reset-exercises-btn');
@@ -1583,10 +1667,15 @@
           DOM.historyList.addEventListener('click', this.handleHistoryItemClick.bind(this));
           DOM.clearHistoryFilter.addEventListener('click', this.handleClearHistoryFilter.bind(this));
           DOM.exerciseInfoToggle.addEventListener('click', this.handleExerciseInfoToggle.bind(this));
-          DOM.restTimerDecrease.addEventListener('click', this.handleRestTimerDecrease.bind(this));
-          DOM.restTimerIncrease.addEventListener('click', this.handleRestTimerIncrease.bind(this));
-          DOM.restTimerPause.addEventListener('click', this.handleRestTimerPause.bind(this));
-          DOM.restTimerReset.addEventListener('click', this.handleRestTimerReset.bind(this));
+          DOM.restTimerDisplay.addEventListener('click', this.handleRestTimerToggle.bind(this));
+          DOM.restTimerDisplay.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this.handleRestTimerToggle();
+            }
+          });
+          DOM.restTimerPause.addEventListener('click', this.handleRestTimerToggle.bind(this));
+          DOM.restTimerStop.addEventListener('click', this.handleRestTimerStop.bind(this));
           DOM.logWeightDecrease.addEventListener('click', this.handleLogWeightDecrease.bind(this));
           DOM.logWeightIncrease.addEventListener('click', this.handleLogWeightIncrease.bind(this));
           DOM.logRepsDecrease.addEventListener('click', this.handleLogRepsDecrease.bind(this));
@@ -1708,7 +1797,6 @@
             if (elapsed > 3600) {
               State.setRestTimer({ running: false, paused: false, remaining: timer.duration });
               State.save();
-              DOM.restTimerPause.textContent = 'Start';
               this.updateRestTimerDisplay();
               UI.announce('Timer was reset due to long inactivity.');
               return;
@@ -1717,80 +1805,53 @@
             // Resume with corrected time
             State.setRestTimer({ startTime: now, remaining });
             State.save();
-            DOM.restTimerPause.textContent = 'Pause';
             this.startRestTimerInterval();
-          } else if (timer.paused) {
-            DOM.restTimerPause.textContent = 'Resume';
           }
           this.updateRestTimerDisplay();
+          this.updatePauseButton();
         },
-        adjustRestTimer(delta) {
-          const timer = State.getRestTimer();
-          const constants = State.getConstants();
-          const isRunning = timer.running && !timer.paused;
-          
-          if (isRunning) {
-            const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
-            const currentRemaining = Math.max(0, timer.remaining - elapsed);
-            const newRemaining = Math.max(0, Math.min(constants.TIMER_MAX_DURATION, currentRemaining + delta));
-            State.setRestTimer({ startTime: Date.now(), remaining: newRemaining });
-            State.save();
-            UI.announce(`${Math.abs(delta)} seconds ${delta > 0 ? 'added' : 'removed'}`);
-          } else {
-            const newDuration = Math.max(constants.TIMER_MIN_DURATION, Math.min(constants.TIMER_MAX_DURATION, timer.duration + delta));
-            State.setRestTimer({ duration: newDuration, remaining: newDuration });
-            State.save();
-            UI.announce(`Rest duration set to ${newDuration} seconds`);
-          }
-          this.updateRestTimerDisplay();
-        },
-        handleRestTimerDecrease() {
-          const constants = State.getConstants();
-          this.adjustRestTimer(-constants.TIMER_ADJUST_STEP);
-        },
-        handleRestTimerIncrease() {
-          const constants = State.getConstants();
-          this.adjustRestTimer(constants.TIMER_ADJUST_STEP);
-        },
-        handleRestTimerPause() {
+        handleRestTimerToggle() {
           const timer = State.getRestTimer();
           if (!timer.running) {
+            // Start timer
             const startingRemaining = timer.remaining || timer.duration;
             State.setRestTimer({ running: true, paused: false, startTime: Date.now(), remaining: startingRemaining });
             State.save();
-            DOM.restTimerPause.textContent = 'Pause';
             this.startRestTimerInterval();
+            this.updatePauseButton();
             UI.announce('Timer started');
           } else if (timer.paused) {
+            // Resume timer
             State.setRestTimer({ paused: false, startTime: Date.now() });
             State.save();
-            DOM.restTimerPause.textContent = 'Pause';
             this.startRestTimerInterval();
+            this.updatePauseButton();
             UI.announce('Timer resumed');
           } else {
+            // Pause timer
             const elapsed = Math.floor((Date.now() - timer.startTime) / 1000);
             const remaining = Math.max(0, timer.remaining - elapsed);
             State.setRestTimer({ paused: true, remaining });
             State.save();
-            DOM.restTimerPause.textContent = 'Resume';
             if (this.restTimerInterval) {
               clearInterval(this.restTimerInterval);
             }
             this.updateRestTimerDisplay();
+            this.updatePauseButton();
             UI.announce('Timer paused');
           }
         },
-        handleRestTimerReset() {
+        handleRestTimerStop() {
           const timer = State.getRestTimer();
           State.setRestTimer({ running: false, paused: false, remaining: timer.duration });
-          DOM.restTimerPause.textContent = 'Start';
-          DOM.restTimerDisplay.classList.remove('warning', 'complete');
+          DOM.restTimerDisplay.classList.remove('warning-yellow', 'warning-orange', 'warning-red', 'warning', 'complete');
           if (this.restTimerInterval) {
             clearInterval(this.restTimerInterval);
           }
           this.updateRestTimerDisplay();
+          this.updatePauseButton();
           State.save();
-          UI.announce('Timer reset');
+          UI.announce('Timer stopped');
         },
         startRestTimerInterval() {
           if (this.restTimerInterval) {
@@ -1831,29 +1892,64 @@
           const timeString = this.formatTime(remainingSeconds);
           DOM.restTimerDisplay.textContent = timeString;
           
+          // Update circular progress
+          const progress = timer.duration > 0 ? remainingSeconds / timer.duration : 1;
+          const circumference = 534.07; // 2 * PI * 85
+          const offset = circumference * (1 - progress);
+          DOM.restTimerProgress.style.strokeDashoffset = offset;
+          
+          // Update colors
           DOM.restTimerDisplay.classList.remove('warning', 'warning-yellow', 'warning-orange', 'warning-red', 'complete');
+          DOM.restTimerProgress.classList.remove('warning', 'warning-yellow', 'warning-orange', 'warning-red', 'complete');
+          
           if (timer.running && !timer.paused) {
             const constants = State.getConstants();
             if (remainingSeconds === 0) {
               DOM.restTimerDisplay.classList.add('complete');
+              DOM.restTimerProgress.classList.add('complete');
             } else if (remainingSeconds <= constants.TIMER_WARNING_RED) {
               DOM.restTimerDisplay.classList.add('warning-red');
+              DOM.restTimerProgress.classList.add('warning-red');
             } else if (remainingSeconds <= constants.TIMER_WARNING_ORANGE) {
               DOM.restTimerDisplay.classList.add('warning-orange');
+              DOM.restTimerProgress.classList.add('warning-orange');
             } else if (remainingSeconds <= constants.TIMER_WARNING_YELLOW) {
               DOM.restTimerDisplay.classList.add('warning-yellow');
+              DOM.restTimerProgress.classList.add('warning-yellow');
             }
+          }
+        },
+        updatePauseButton() {
+          const timer = State.getRestTimer();
+          const isPlaying = timer.running && !timer.paused;
+          
+          if (isPlaying) {
+            // Show pause icon
+            DOM.restTimerPause.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
+              </svg>
+            `;
+            DOM.restTimerPause.setAttribute('aria-label', 'Pause timer');
+          } else {
+            // Show play icon
+            DOM.restTimerPause.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path d="M10.804 8 5 4.633v6.734L10.804 8zm.792-.696a.802.802 0 0 1 0 1.392l-6.363 3.692C4.713 12.69 4 12.345 4 11.692V4.308c0-.653.713-.998 1.233-.696l6.363 3.692z"/>
+              </svg>
+            `;
+            DOM.restTimerPause.setAttribute('aria-label', 'Start timer');
           }
         },
         handleRestTimerComplete() {
           State.setRestTimer({ running: false, paused: false, remaining: 0 });
           State.save();
-          DOM.restTimerPause.textContent = 'Start';
           DOM.restTimerDisplay.classList.add('complete');
           if (this.restTimerInterval) {
             clearInterval(this.restTimerInterval);
           }
           this.updateRestTimerDisplay();
+          this.updatePauseButton();
           UI.announce('Rest time complete!');
           
           const constants = State.getConstants();
@@ -1867,7 +1963,10 @@
           
           setTimeout(() => {
             if (!State.getRestTimer().running) {
-              this.handleRestTimerReset();
+              const timer = State.getRestTimer();
+              State.setRestTimer({ running: false, paused: false, remaining: timer.duration });
+              this.updateRestTimerDisplay();
+              this.updatePauseButton();
             }
           }, constants.TIMER_AUTO_RESET_DELAY);
         },
@@ -2040,7 +2139,6 @@
               const startingRemaining = timer.remaining || timer.duration;
               State.setRestTimer({ running: true, paused: false, startTime: Date.now(), remaining: startingRemaining });
               State.save();
-              DOM.restTimerPause.textContent = 'Pause';
               this.startRestTimerInterval();
               UI.announce('Rest timer started automatically.');
             }
