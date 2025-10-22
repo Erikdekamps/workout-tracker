@@ -1664,9 +1664,6 @@
           
           // Announce for accessibility
           UI.announce(`Loaded ${exercise.name}: ${weight} kg × ${reps} reps`);
-          
-          // Focus on weight input for quick editing
-          DOM.logInputs.weight.focus();
         },
         handleTabClick(event) {
           const tab = event.target.closest('[role="tab"]');
