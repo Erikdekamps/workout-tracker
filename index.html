@@ -1104,7 +1104,8 @@
           activeTab: 'log', exercises: [], history: [],
           logForm: { exerciseId: '', weight: '', reps: '' },
           settings: { filter: '', editingExerciseId: null, autoStartTimer: true },
-          restTimer: { running: false, paused: false, startTime: 0, remaining: 60, duration: 60 }
+          restTimer: { running: false, paused: false, startTime: 0, remaining: 60, duration: 60 },
+          restTimerCollapsed: true
         },
         _constants: {
           STORAGE_KEY: 'workoutTrackerState_v5',
@@ -1173,14 +1174,15 @@
 
         save() {
           try {
-            const { exercises, history, activeTab, logForm, settings, restTimer } = this._data;
+            const { exercises, history, activeTab, logForm, settings, restTimer, restTimerCollapsed } = this._data;
             localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify({
               exercises,
               history,
               activeTab,
               logForm: { exerciseId: logForm.exerciseId, weight: logForm.weight, reps: logForm.reps },
               settings: { autoStartTimer: settings.autoStartTimer },
-              restTimer
+              restTimer,
+              restTimerCollapsed
             }));
           } catch (error) {
             console.error('Failed to save state:', error);
@@ -1236,6 +1238,8 @@
         setEditingExercise(id) { this._data.settings.editingExerciseId = id; },
         setRestTimer(data) { Object.assign(this._data.restTimer, data); },
         getRestTimer() { return this._data.restTimer; },
+        setRestTimerCollapsed(collapsed) { this._data.restTimerCollapsed = collapsed; },
+        getRestTimerCollapsed() { return this._data.restTimerCollapsed; },
         
         // Helper to get sorted exercises by category
         getExercisesByCategory(category) {
@@ -1744,24 +1748,40 @@
           document.addEventListener('click', this.handleOutsideClick.bind(this));
           this.updateRestTimerDisplay();
           this.resumeRestTimerIfRunning();
+          this.restoreRestTimerCollapsedState();
         },
         
         // ===================================================================================
         // HELPER FUNCTIONS
         // ===================================================================================
+        restoreRestTimerCollapsedState() {
+          const isCollapsed = State.getRestTimerCollapsed();
+          if (isCollapsed) {
+            DOM.restTimerCard.classList.add('collapsed');
+            DOM.restTimerHeader.setAttribute('aria-expanded', 'false');
+          } else {
+            DOM.restTimerCard.classList.remove('collapsed');
+            DOM.restTimerHeader.setAttribute('aria-expanded', 'true');
+          }
+        },
         handleRestTimerHeaderToggle() {
           const isCollapsed = DOM.restTimerCard.classList.contains('collapsed');
           if (isCollapsed) {
             DOM.restTimerCard.classList.remove('collapsed');
             DOM.restTimerHeader.setAttribute('aria-expanded', 'true');
+            State.setRestTimerCollapsed(false);
           } else {
             DOM.restTimerCard.classList.add('collapsed');
             DOM.restTimerHeader.setAttribute('aria-expanded', 'false');
+            State.setRestTimerCollapsed(true);
           }
+          State.save();
         },
         expandRestTimer() {
           DOM.restTimerCard.classList.remove('collapsed');
           DOM.restTimerHeader.setAttribute('aria-expanded', 'true');
+          State.setRestTimerCollapsed(false);
+          State.save();
         },
         formatTime(totalSeconds) {
           const safeSeconds = Math.max(0, Math.floor(totalSeconds));
