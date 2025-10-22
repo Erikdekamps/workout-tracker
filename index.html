@@ -990,7 +990,7 @@
         _defaults: {
           activeTab: 'log', exercises: [], history: [],
           logForm: { exerciseId: '', weight: '', reps: '' },
-          settings: { filter: '', editingExerciseId: null },
+          settings: { filter: '', editingExerciseId: null, autoStartTimer: true },
           restTimer: { running: false, paused: false, startTime: 0, remaining: 60, duration: 60 }
         },
         _constants: {
@@ -1057,12 +1057,13 @@
 
         save() {
           try {
-            const { exercises, history, activeTab, logForm, restTimer } = this._data;
+            const { exercises, history, activeTab, logForm, settings, restTimer } = this._data;
             localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify({
               exercises,
               history,
               activeTab,
               logForm: { exerciseId: logForm.exerciseId, weight: logForm.weight, reps: logForm.reps },
+              settings: { autoStartTimer: settings.autoStartTimer },
               restTimer
             }));
           } catch (error) {
@@ -2032,6 +2033,21 @@
           // Targeted update instead of full render
           UI.updateHistoryOnly();
           UI.announce(`${exercise.name} logged successfully.`);
+          
+          // Auto-start rest timer if enabled
+          const { settings } = State.get();
+          if (settings.autoStartTimer) {
+            const timer = State.getRestTimer();
+            if (!timer.running) {
+              const startingRemaining = timer.remaining || timer.duration;
+              State.setRestTimer({ running: true, paused: false, startTime: Date.now(), remaining: startingRemaining });
+              State.save();
+              DOM.restTimerPause.textContent = 'Pause';
+              DOM.restTimerToggleDisplay.style.display = 'inline';
+              this.startRestTimerInterval();
+              UI.announce('Rest timer started automatically.');
+            }
+          }
           
           // Blur any focused input to dismiss mobile keyboard
           if (document.activeElement && document.activeElement.tagName === 'INPUT') {
