@@ -710,8 +710,47 @@
       transition: opacity 0.3s ease;
     }
 
+    .rest-timer-card {
+      overflow: hidden;
+    }
+
+    .rest-timer-card.collapsed .rest-timer__panel {
+      display: none;
+    }
+
+    .rest-timer__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s;
+    }
+
+    .rest-timer__header:hover {
+      background-color: var(--color-hover);
+    }
+
+    .rest-timer__title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--color-text);
+      margin: 0;
+    }
+
+    .rest-timer__toggle-icon {
+      transition: transform 0.3s ease;
+      color: var(--color-text-secondary);
+      display: flex;
+      align-items: center;
+    }
+
+    .rest-timer-card:not(.collapsed) .rest-timer__toggle-icon {
+      transform: rotate(180deg);
+    }
+
     .rest-timer__panel {
-      padding: 1rem 0;
+      padding: 0 0 1rem 0;
     }
 
     .rest-timer__display-container {
@@ -932,8 +971,16 @@
           </form>
         </div>
 
-        <div class="card">
-          <div class="rest-timer__panel">
+        <div class="card rest-timer-card collapsed" id="rest-timer-card">
+          <div class="rest-timer__header" id="rest-timer-header" role="button" tabindex="0" aria-expanded="false" aria-controls="rest-timer-panel">
+            <h2 class="rest-timer__title">Rest Timer</h2>
+            <div class="rest-timer__toggle-icon">
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
+              </svg>
+            </div>
+          </div>
+          <div class="rest-timer__panel" id="rest-timer-panel">
             <div class="rest-timer__display-container">
               <div class="rest-timer__circle">
                 <svg class="rest-timer__svg" viewBox="0 0 180 180">
@@ -1270,6 +1317,8 @@
           this.restTimerProgress = get('rest-timer-progress');
           this.restTimerPause = get('rest-timer-pause');
           this.restTimerStop = get('rest-timer-stop');
+          this.restTimerCard = get('rest-timer-card');
+          this.restTimerHeader = get('rest-timer-header');
           this.manageExercisesMenuToggle = get('manage-exercises-menu-toggle');
           this.manageExercisesMenu = get('manage-exercises-menu');
           this.resetExercisesBtn = get('reset-exercises-btn');
@@ -1676,6 +1725,13 @@
           });
           DOM.restTimerPause.addEventListener('click', this.handleRestTimerToggle.bind(this));
           DOM.restTimerStop.addEventListener('click', this.handleRestTimerStop.bind(this));
+          DOM.restTimerHeader.addEventListener('click', this.handleRestTimerHeaderToggle.bind(this));
+          DOM.restTimerHeader.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this.handleRestTimerHeaderToggle();
+            }
+          });
           DOM.logWeightDecrease.addEventListener('click', this.handleLogWeightDecrease.bind(this));
           DOM.logWeightIncrease.addEventListener('click', this.handleLogWeightIncrease.bind(this));
           DOM.logRepsDecrease.addEventListener('click', this.handleLogRepsDecrease.bind(this));
@@ -1693,6 +1749,20 @@
         // ===================================================================================
         // HELPER FUNCTIONS
         // ===================================================================================
+        handleRestTimerHeaderToggle() {
+          const isCollapsed = DOM.restTimerCard.classList.contains('collapsed');
+          if (isCollapsed) {
+            DOM.restTimerCard.classList.remove('collapsed');
+            DOM.restTimerHeader.setAttribute('aria-expanded', 'true');
+          } else {
+            DOM.restTimerCard.classList.add('collapsed');
+            DOM.restTimerHeader.setAttribute('aria-expanded', 'false');
+          }
+        },
+        expandRestTimer() {
+          DOM.restTimerCard.classList.remove('collapsed');
+          DOM.restTimerHeader.setAttribute('aria-expanded', 'true');
+        },
         formatTime(totalSeconds) {
           const safeSeconds = Math.max(0, Math.floor(totalSeconds));
           const minutes = Math.floor(safeSeconds / 60);
@@ -2130,6 +2200,9 @@
           // Targeted update instead of full render
           UI.updateHistoryOnly();
           UI.announce(`${exercise.name} logged successfully.`);
+          
+          // Expand rest timer
+          this.expandRestTimer();
           
           // Auto-start rest timer if enabled
           const { settings } = State.get();
