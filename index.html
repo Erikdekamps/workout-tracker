@@ -1018,27 +1018,8 @@
       </section>
       <section id="settings-panel" class="panel" role="tabpanel" aria-labelledby="settings-tab" hidden>
         <div class="card">
-          <h2 class="card__title" id="add-exercise-title">Add New Exercise</h2>
-          <form id="add-exercise-form" class="form" novalidate aria-labelledby="add-exercise-title">
-            <div class="form-group form-group--full-width">
-              <label for="new-exercise-name" class="form-group__label">Exercise Name</label><input type="text"
-                id="new-exercise-name" class="input" required placeholder="Filter or add new exercise...">
-            </div>
-            <div class="form-group">
-              <label for="new-exercise-category" class="form-group__label">Category</label><select
-                id="new-exercise-category" class="input" required></select>
-            </div>
-            <div class="form-group form-group--full-width">
-              <label for="new-exercise-notes" class="form-group__label">Notes (Optional)</label><textarea
-                id="new-exercise-notes" class="input"
-                placeholder="e.g., Proper form cues, machine number..."></textarea>
-            </div>
-            <button type="submit" class="button button--primary form-group--full-width">Add Exercise</button>
-          </form>
-        </div>
-        <div class="card">
           <div class="card__header">
-            <h2 class="card__title">Manage Exercises</h2>
+            <h2 class="card__title">Manage Exercises & Muscle Groups</h2>
             <div class="dropdown">
               <button class="dropdown__toggle" id="manage-exercises-menu-toggle" aria-label="Exercise options menu" aria-expanded="false">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
@@ -1056,8 +1037,39 @@
               </div>
             </div>
           </div>
-          <div id="manage-exercise-list" class="collapsible-list"></div>
-          <p id="manage-exercise-empty-state" hidden>No exercises match your filter.</p>
+          
+          <div style="padding: 0 0 1rem;">
+            <h3 style="font-size: 1rem; font-weight: 600; margin: 1.5rem 0 1rem; color: var(--color-text);">Add New Exercise</h3>
+            <form id="add-exercise-form" class="form" novalidate>
+              <div class="form-group form-group--full-width">
+                <label for="new-exercise-name" class="form-group__label">Exercise Name</label>
+                <input type="text" id="new-exercise-name" class="input" required placeholder="Filter or add new exercise...">
+              </div>
+              <div class="form-group">
+                <label for="new-exercise-category" class="form-group__label">Muscle Group</label>
+                <select id="new-exercise-category" class="input" required></select>
+              </div>
+              <div class="form-group form-group--full-width">
+                <label for="new-exercise-notes" class="form-group__label">Notes (Optional)</label>
+                <textarea id="new-exercise-notes" class="input" placeholder="e.g., Proper form cues, machine number..."></textarea>
+              </div>
+              <button type="submit" class="button button--primary form-group--full-width">Add Exercise</button>
+            </form>
+
+            <div id="manage-exercise-list" class="collapsible-list"></div>
+            <p id="manage-exercise-empty-state" hidden>No exercises match your filter.</p>
+
+            <h3 style="font-size: 1rem; font-weight: 600; margin: 2rem 0 1rem; color: var(--color-text);">Add Custom Muscle Group</h3>
+            <form id="add-muscle-group-form" class="form" novalidate>
+              <div class="form-group form-group--full-width">
+                <label for="new-muscle-group-name" class="form-group__label">Muscle Group Name</label>
+                <input type="text" id="new-muscle-group-name" class="input" required placeholder="e.g., Core, Forearms...">
+              </div>
+              <button type="submit" class="button button--primary form-group--full-width">Add Muscle Group</button>
+            </form>
+            <div id="manage-muscle-group-list" class="collapsible-list" style="margin-top: 1rem;"></div>
+            <p id="manage-muscle-group-empty-state" hidden>All muscle groups are defaults.</p>
+          </div>
         </div>
       </section>
 
@@ -1105,11 +1117,12 @@
           logForm: { exerciseId: '', weight: '', reps: '' },
           settings: { filter: '', editingExerciseId: null, autoStartTimer: true },
           restTimer: { running: false, paused: false, startTime: 0, remaining: 60, duration: 60 },
-          restTimerCollapsed: true
+          restTimerCollapsed: true,
+          customMuscleGroups: []
         },
         _constants: {
           STORAGE_KEY: 'workoutTrackerState_v5',
-          EXERCISE_CATEGORIES: [
+          DEFAULT_EXERCISE_CATEGORIES: [
             'Back',
             'Biceps',
             'Chest',
@@ -1174,7 +1187,7 @@
 
         save() {
           try {
-            const { exercises, history, activeTab, logForm, settings, restTimer, restTimerCollapsed } = this._data;
+            const { exercises, history, activeTab, logForm, settings, restTimer, restTimerCollapsed, customMuscleGroups } = this._data;
             localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify({
               exercises,
               history,
@@ -1182,7 +1195,8 @@
               logForm: { exerciseId: logForm.exerciseId, weight: logForm.weight, reps: logForm.reps },
               settings: { autoStartTimer: settings.autoStartTimer },
               restTimer,
-              restTimerCollapsed
+              restTimerCollapsed,
+              customMuscleGroups
             }));
           } catch (error) {
             console.error('Failed to save state:', error);
@@ -1240,6 +1254,39 @@
         getRestTimer() { return this._data.restTimer; },
         setRestTimerCollapsed(collapsed) { this._data.restTimerCollapsed = collapsed; },
         getRestTimerCollapsed() { return this._data.restTimerCollapsed; },
+        
+        // Muscle group management
+        getAllMuscleGroups() {
+          const defaults = [...this._constants.DEFAULT_EXERCISE_CATEGORIES];
+          const custom = this._data.customMuscleGroups || [];
+          return [...defaults, ...custom].sort((a, b) => a.localeCompare(b));
+        },
+        addCustomMuscleGroup(name) {
+          if (!this._data.customMuscleGroups) {
+            this._data.customMuscleGroups = [];
+          }
+          this._data.customMuscleGroups.push(name);
+        },
+        deleteCustomMuscleGroup(name) {
+          this._data.customMuscleGroups = this._data.customMuscleGroups.filter(g => g !== name);
+          // Also update any exercises using this category to move to 'Other' or first default
+          const fallbackCategory = this._constants.DEFAULT_EXERCISE_CATEGORIES[0];
+          this._data.exercises.forEach(ex => {
+            if (ex.category === name) {
+              ex.category = fallbackCategory;
+            }
+          });
+        },
+        muscleGroupExists(name) {
+          const allGroups = this.getAllMuscleGroups();
+          return allGroups.some(g => g.toLowerCase() === name.toLowerCase());
+        },
+        isDefaultMuscleGroup(name) {
+          return this._constants.DEFAULT_EXERCISE_CATEGORIES.includes(name);
+        },
+        getCustomMuscleGroups() {
+          return this._data.customMuscleGroups || [];
+        },
         
         // Helper to get sorted exercises by category
         getExercisesByCategory(category) {
@@ -1312,6 +1359,10 @@
           this.newExerciseInputs = { name: get('new-exercise-name'), category: get('new-exercise-category'), notes: get('new-exercise-notes') };
           this.manageExerciseList = get('manage-exercise-list');
           this.manageExerciseEmptyState = get('manage-exercise-empty-state');
+          this.addMuscleGroupForm = get('add-muscle-group-form');
+          this.newMuscleGroupInput = get('new-muscle-group-name');
+          this.manageMuscleGroupList = get('manage-muscle-group-list');
+          this.manageMuscleGroupEmptyState = get('manage-muscle-group-empty-state');
           this.dialog = get('confirmation-dialog');
           this.dialogTitle = get('dialog-title');
           this.dialogMessage = get('dialog-message');
@@ -1382,11 +1433,12 @@
         },
         renderLogForm() {
           const { logForm } = State.get();
-          const { EXERCISE_CATEGORIES, SELECT_MUSCLE_GROUP } = State.getConstants();
+          const { SELECT_MUSCLE_GROUP } = State.getConstants();
+          const muscleGroups = State.getAllMuscleGroups();
           
           // Populate muscle group dropdown
           DOM.logMuscleGroupSelect.innerHTML = `<option value="">${SELECT_MUSCLE_GROUP}</option>` +
-            this.createSelectOptions(EXERCISE_CATEGORIES.map(c => ({ value: c, label: c })));
+            this.createSelectOptions(muscleGroups.map(c => ({ value: c, label: c })));
           
           // Set muscle group value from saved exercise if exists
           if (logForm.exerciseId) {
@@ -1423,6 +1475,13 @@
           const filteredExercises = State.getExercisesByCategory(selectedMuscleGroup);
           DOM.logExerciseSelect.innerHTML = `<option value="">${SELECT_EXERCISE}</option>` +
             this.createSelectOptions(filteredExercises.map(ex => ({ value: ex.id, label: ex.name })));
+          
+          // Auto-select if only one exercise available
+          if (filteredExercises.length === 1) {
+            DOM.logExerciseSelect.value = filteredExercises[0].id;
+            State.setLogFormField('exerciseId', filteredExercises[0].id);
+            this.updateLogFormVisibility();
+          }
         },
         renderHistory() {
           const { exercises, history, logForm } = State.get();
@@ -1526,9 +1585,9 @@
         },
         renderManageExerciseList() {
           const { settings } = State.get();
-          const { EXERCISE_CATEGORIES } = State.getConstants();
+          const muscleGroups = State.getAllMuscleGroups();
           
-          DOM.newExerciseInputs.category.innerHTML = this.createSelectOptions(EXERCISE_CATEGORIES.map(c => ({ value: c, label: c })));
+          DOM.newExerciseInputs.category.innerHTML = this.createSelectOptions(muscleGroups.map(c => ({ value: c, label: c })));
           DOM.manageExerciseList.innerHTML = '';
           
           // Cache filtered results to avoid repeated filtering
@@ -1585,7 +1644,7 @@
           return fragment;
         },
         _createExerciseEditView(exercise) {
-          const { EXERCISE_CATEGORIES } = State.getConstants();
+          const muscleGroups = State.getAllMuscleGroups();
           const createSelect = (id, options, selectedValue) => {
             const select = document.createElement('select');
             select.className = 'input';
@@ -1623,7 +1682,7 @@
           nameInput.id = `edit-exercise-name-${exercise.id}`;
           nameInput.value = exercise.name;
           
-          const categorySelect = createSelect(`edit-exercise-category-${exercise.id}`, EXERCISE_CATEGORIES.map(c => ({ value: c, label: c })), exercise.category);
+          const categorySelect = createSelect(`edit-exercise-category-${exercise.id}`, muscleGroups.map(c => ({ value: c, label: c })), exercise.category);
           
           const notesTextarea = document.createElement('textarea');
           notesTextarea.className = 'input';
@@ -1699,6 +1758,54 @@
           this.renderManageExerciseList();
         },
         
+        updateManageMuscleGroupListOnly() {
+          this.renderManageMuscleGroupList();
+        },
+        
+        renderManageMuscleGroupList() {
+          DOM.manageMuscleGroupList.innerHTML = '';
+          const customGroups = State.getCustomMuscleGroups();
+          const hasCustomGroups = customGroups.length > 0;
+          
+          DOM.manageMuscleGroupEmptyState.hidden = hasCustomGroups;
+          
+          if (hasCustomGroups) {
+            const list = document.createElement('ul');
+            list.className = 'collapsible-group__list';
+            list.style.padding = '0';
+            
+            customGroups.sort((a, b) => a.localeCompare(b)).forEach(groupName => {
+              const li = document.createElement('li');
+              li.className = 'exercise-list__item';
+              
+              const mainDiv = document.createElement('div');
+              mainDiv.className = 'exercise-list__item-main';
+              
+              const nameSpan = document.createElement('span');
+              nameSpan.className = 'exercise-list__name';
+              nameSpan.textContent = groupName;
+              mainDiv.appendChild(nameSpan);
+              
+              const actionsDiv = document.createElement('div');
+              actionsDiv.className = 'exercise-list__actions';
+              
+              const deleteButton = this._createIconButton({
+                action: 'delete-muscle-group',
+                exerciseId: groupName,
+                label: `Delete ${groupName}`,
+                extraClass: 'button--danger-hover',
+                svgPath: 'M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0zM14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3V2h11v1z'
+              });
+              
+              actionsDiv.appendChild(deleteButton);
+              li.append(mainDiv, actionsDiv);
+              list.appendChild(li);
+            });
+            
+            DOM.manageMuscleGroupList.appendChild(list);
+          }
+        },
+        
         updateLogFormOnly() {
           this.renderLogForm();
         }
@@ -1743,12 +1850,15 @@
           DOM.addExerciseForm.addEventListener('submit', this.handleAddExerciseFormSubmit.bind(this));
           DOM.manageExerciseList.addEventListener('click', this.handleManageListClick.bind(this));
           DOM.newExerciseInputs.name.addEventListener('input', this.handleSettingsFilterInput.bind(this));
+          DOM.addMuscleGroupForm.addEventListener('submit', this.handleAddMuscleGroupFormSubmit.bind(this));
+          DOM.manageMuscleGroupList.addEventListener('click', this.handleManageMuscleGroupListClick.bind(this));
           DOM.manageExercisesMenuToggle.addEventListener('click', this.handleMenuToggle.bind(this));
           DOM.resetExercisesBtn.addEventListener('click', this.handleResetExercises.bind(this));
           document.addEventListener('click', this.handleOutsideClick.bind(this));
           this.updateRestTimerDisplay();
           this.resumeRestTimerIfRunning();
           this.restoreRestTimerCollapsedState();
+          UI.renderManageMuscleGroupList();
         },
         
         // ===================================================================================
@@ -2078,11 +2188,9 @@
           } else if (id === 'log-muscle-group') {
             // Update exercise dropdown when muscle group changes
             UI.updateExerciseSelectFromMuscleGroup();
-            // Clear exercise selection but keep weight/reps
-            DOM.logExerciseSelect.value = '';
-            State.setLogFormField('exerciseId', '');
+            // updateExerciseSelectFromMuscleGroup handles auto-selection for single exercise
+            // Only update visibility and history - don't override the exercise selection
             State.save();
-            UI.updateLogFormVisibility();
             // Update history to show exercises from selected muscle group (targeted update)
             UI.updateHistoryOnly();
           } else if (id === 'log-exercise') {
@@ -2275,6 +2383,81 @@
           DOM.newExerciseInputs.name.focus();
           UI.render();
           UI.announce(`${name} added successfully.`);
+        },
+        handleAddMuscleGroupFormSubmit(event) {
+          event.preventDefault();
+          if (!DOM.addMuscleGroupForm.checkValidity()) {
+            DOM.addMuscleGroupForm.reportValidity();
+            UI.announce('Please enter a muscle group name.');
+            return;
+          }
+          
+          const name = DOM.newMuscleGroupInput.value.trim();
+          
+          if (!name) {
+            UI.announce('Please enter a valid muscle group name.');
+            return;
+          }
+          
+          // Check if muscle group already exists (case-insensitive)
+          if (State.muscleGroupExists(name)) {
+            UI.showDialog({
+              title: 'Duplicate Muscle Group',
+              message: `A muscle group with the name "${name}" already exists.`,
+              confirmText: 'OK',
+              showCancel: false
+            });
+            UI.announce(`Muscle group "${name}" already exists.`);
+            return;
+          }
+          
+          State.addCustomMuscleGroup(name);
+          State.save();
+          DOM.addMuscleGroupForm.reset();
+          DOM.newMuscleGroupInput.focus();
+          
+          // Update all relevant UI
+          UI.renderManageMuscleGroupList();
+          UI.renderLogForm();
+          UI.renderManageExerciseList();
+          UI.announce(`${name} muscle group added successfully.`);
+        },
+        handleManageMuscleGroupListClick(event) {
+          const button = event.target.closest('button[data-action]');
+          if (!button) return;
+          
+          const { action, exerciseId: groupName } = button.dataset;
+          
+          if (action === 'delete-muscle-group') {
+            this.handleDeleteMuscleGroup(groupName);
+          }
+        },
+        async handleDeleteMuscleGroup(groupName) {
+          // Check if any exercises use this muscle group
+          const exercisesUsingGroup = State.get().exercises.filter(ex => ex.category === groupName);
+          
+          let message = `Are you sure you want to delete the muscle group "${groupName}"?`;
+          if (exercisesUsingGroup.length > 0) {
+            const fallbackCategory = State.getConstants().DEFAULT_EXERCISE_CATEGORIES[0];
+            message += `\n\n${exercisesUsingGroup.length} exercise(s) will be moved to "${fallbackCategory}".`;
+          }
+          
+          const confirmed = await UI.showDialog({
+            title: 'Delete Muscle Group',
+            message,
+            confirmText: 'Delete'
+          });
+          
+          if (confirmed) {
+            State.deleteCustomMuscleGroup(groupName);
+            State.save();
+            
+            // Update all relevant UI
+            UI.renderManageMuscleGroupList();
+            UI.renderLogForm();
+            UI.renderManageExerciseList();
+            UI.announce(`Muscle group "${groupName}" deleted.`);
+          }
         },
         handleManageListClick(event) {
           const button = event.target.closest('button[data-action]');
