@@ -2694,10 +2694,30 @@
 
         handleExportData() {
           const state = State.get();
+          
+          // Export exercises with name-based references
+          const exercisesForExport = state.exercises.map(ex => ({
+            name: ex.name,
+            category: ex.category,
+            type: ex.type,
+            notes: ex.notes || ''
+          }));
+          
+          // Export history with exercise names instead of IDs
+          const historyForExport = state.history.map(item => {
+            const exercise = State.findExercise(item.exerciseId);
+            return {
+              exerciseName: exercise ? exercise.name : 'Unknown',
+              timestamp: item.timestamp,
+              weight: item.weight,
+              reps: item.reps
+            };
+          });
+          
           const dataToExport = {
-            exercises: state.exercises,
-            history: state.history,
-            customMuscleGroups: state.customMuscleGroups,
+            exercises: exercisesForExport,
+            history: historyForExport,
+            customMuscleGroups: state.customMuscleGroups || [],
             exportDate: new Date().toISOString()
           };
           
@@ -2750,15 +2770,44 @@
                 throw new Error('Invalid data format: missing or invalid exercises array');
               }
               
+              // Import custom muscle groups first
               const state = State.get();
-              state.exercises = importedData.exercises;
-              state.history = importedData.history || [];
               state.customMuscleGroups = importedData.customMuscleGroups || [];
               
-              const allIds = [...state.exercises, ...state.history]
-                .map(item => parseInt(item.id.split('-')[1]))
-                .filter(Boolean);
-              state._nextId = allIds.length ? Math.max(...allIds) + 1 : 1;
+              // Create a map to track exercise names to new IDs
+              const exerciseNameToId = new Map();
+              state.exercises = [];
+              state._nextId = 1;
+              
+              // Import exercises with new IDs
+              importedData.exercises.forEach(ex => {
+                const newExercise = {
+                  id: State.generateId('ex'),
+                  name: ex.name,
+                  category: ex.category,
+                  type: ex.type || 'weight_reps',
+                  notes: ex.notes || ''
+                };
+                state.exercises.push(newExercise);
+                exerciseNameToId.set(ex.name, newExercise.id);
+              });
+              
+              // Import history matching by exercise name
+              state.history = [];
+              if (importedData.history && Array.isArray(importedData.history)) {
+                importedData.history.forEach(item => {
+                  const exerciseId = exerciseNameToId.get(item.exerciseName);
+                  if (exerciseId) {
+                    state.history.push({
+                      id: State.generateId('act'),
+                      exerciseId: exerciseId,
+                      timestamp: item.timestamp,
+                      weight: item.weight,
+                      reps: item.reps
+                    });
+                  }
+                });
+              }
               
               State.save();
               UI.render();
