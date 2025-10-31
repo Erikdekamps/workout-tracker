@@ -754,49 +754,6 @@
       transition: opacity 0.3s ease;
     }
 
-    .rest-timer-card {
-      overflow: hidden;
-    }
-
-    .rest-timer-card.collapsed .rest-timer__panel {
-      display: none;
-    }
-
-    .rest-timer__header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      cursor: pointer;
-      user-select: none;
-      transition: background-color 0.2s;
-    }
-
-    .rest-timer__header:hover {
-      background-color: var(--color-hover);
-    }
-
-    .rest-timer__title {
-      font-size: 1.125rem;
-      font-weight: 600;
-      color: var(--color-text);
-      margin: 0;
-    }
-
-    .rest-timer__toggle-icon {
-      transition: transform 0.3s ease;
-      color: var(--color-text-secondary);
-      display: flex;
-      align-items: center;
-    }
-
-    .rest-timer-card:not(.collapsed) .rest-timer__toggle-icon {
-      transform: rotate(180deg);
-    }
-
-    .rest-timer__panel {
-      padding: 1rem;
-    }
-
     .rest-timer__display-container {
       display: flex;
       align-items: center;
@@ -963,99 +920,111 @@
         </ul>
       </nav>
       <section id="log-panel" class="panel" role="tabpanel" aria-labelledby="log-tab">
-        <div class="card">
-          <div class="card__title-container">
-            <h2 class="card__title" id="log-form-title">Log an Activity</h2>
-            <button type="button" class="button button--icon" id="clear-history-filter" aria-label="Clear filter" style="display: none;">
-              <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
-              </svg>
-            </button>
-          </div>
-          <form id="log-form" class="form form--log" novalidate aria-labelledby="log-form-title">
-            <div class="form-group form-group--full-width">
-              <label for="log-muscle-group" class="form-group__label">Muscle Group</label>
-              <select id="log-muscle-group" class="input" name="muscleGroup" required>
-                <option value="">Select muscle group</option>
-              </select>
-            </div>
-            <div class="form-group form-group--with-info" id="log-exercise-group" hidden>
-              <label for="log-exercise" class="form-group__label">
-                Exercise
-                <button type="button" class="exercise-info-toggle" id="exercise-info-toggle" aria-label="Show exercise information" title="Show exercise information">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
-                    <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
-                    <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+          <!-- Log Activity Section -->
+          <div class="card card--no-padding">
+            <details id="log-activity-panel" class="collapsible-group" open>
+              <summary class="collapsible-group__summary">
+                <span>Log an Activity</span>
+                <button type="button" class="button button--icon" id="clear-history-filter" aria-label="Clear filter" style="display: none;">
+                  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+                    <path d="M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z"/>
                   </svg>
                 </button>
-              </label>
-              <select id="log-exercise" class="input" name="exerciseId" required>
-                <option value="">Select an exercise</option>
-              </select>
-            </div>
-            <div id="exercise-info-panel" class="exercise-info-panel"></div>
-            <div class="form-group form-group--full-width" id="log-weight-group" hidden>
-              <label for="log-weight" class="form-group__label">Weight (kg)</label>
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <button type="button" id="log-weight-decrease" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;" aria-label="Decrease weight by 2.5 kg">−</button>
-                <input type="number" id="log-weight" class="input" name="weight" min="0" max="9999" step="0.5" placeholder="20" pattern="[0-9]*" inputmode="numeric" style="flex: 1; text-align: center;">
-                <button type="button" id="log-weight-increase" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;" aria-label="Increase weight by 2.5 kg">+</button>
+              </summary>
+              <div style="padding: 1rem;">
+                <form id="log-form" class="form form--log" novalidate aria-labelledby="log-form-title">
+                  <div class="form-group form-group--full-width">
+                    <label for="log-muscle-group" class="form-group__label">Muscle Group</label>
+                    <select id="log-muscle-group" class="input" name="muscleGroup" required>
+                      <option value="">Select muscle group</option>
+                    </select>
+                  </div>
+                  <div class="form-group form-group--with-info" id="log-exercise-group" hidden>
+                    <label for="log-exercise" class="form-group__label">
+                      Exercise
+                      <button type="button" class="exercise-info-toggle" id="exercise-info-toggle" aria-label="Show exercise information" title="Show exercise information">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                          <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16"/>
+                          <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0"/>
+                        </svg>
+                      </button>
+                    </label>
+                    <select id="log-exercise" class="input" name="exerciseId" required>
+                      <option value="">Select an exercise</option>
+                    </select>
+                  </div>
+                  <div id="exercise-info-panel" class="exercise-info-panel"></div>
+                  <div class="form-group form-group--full-width" id="log-weight-group" hidden>
+                    <label for="log-weight" class="form-group__label">Weight (kg)</label>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                      <button type="button" id="log-weight-decrease" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;" aria-label="Decrease weight by 2.5 kg">−</button>
+                      <input type="number" id="log-weight" class="input" name="weight" min="0" max="9999" step="0.5" placeholder="20" pattern="[0-9]*" inputmode="numeric" style="flex: 1; text-align: center;">
+                      <button type="button" id="log-weight-increase" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;" aria-label="Increase weight by 2.5 kg">+</button>
+                    </div>
+                  </div>
+                  <div class="form-group form-group--full-width" id="log-reps-group" hidden>
+                    <label for="log-reps" class="form-group__label">Reps</label>
+                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                      <button type="button" id="log-reps-decrease" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;" aria-label="Decrease reps by 1">−</button>
+                      <input type="number" id="log-reps" class="input" name="reps" min="1" max="9999" step="1" placeholder="12" pattern="[0-9]*" inputmode="numeric" style="flex: 1; text-align: center;">
+                      <button type="button" id="log-reps-increase" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;" aria-label="Increase reps by 1">+</button>
+                    </div>
+                  </div>
+                  <button type="submit" class="button button--primary form-group--full-width">Log Activity</button>
+                </form>
               </div>
-            </div>
-            <div class="form-group form-group--full-width" id="log-reps-group" hidden>
-              <label for="log-reps" class="form-group__label">Reps</label>
-              <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <button type="button" id="log-reps-decrease" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;" aria-label="Decrease reps by 1">−</button>
-                <input type="number" id="log-reps" class="input" name="reps" min="1" max="9999" step="1" placeholder="12" pattern="[0-9]*" inputmode="numeric" style="flex: 1; text-align: center;">
-                <button type="button" id="log-reps-increase" class="button button--secondary" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;" aria-label="Increase reps by 1">+</button>
-              </div>
-            </div>
-            <button type="submit" class="button button--primary form-group--full-width">Log Activity</button>
-          </form>
-        </div>
-
-        <div class="card rest-timer-card collapsed" id="rest-timer-card">
-          <div class="rest-timer__header" id="rest-timer-header" role="button" tabindex="0" aria-expanded="false" aria-controls="rest-timer-panel">
-            <h2 class="rest-timer__title">Rest Timer</h2>
-            <div class="rest-timer__toggle-icon">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                <path fill-rule="evenodd" d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/>
-              </svg>
-            </div>
+            </details>
           </div>
-          <div class="rest-timer__panel" id="rest-timer-panel">
-            <div class="rest-timer__display-container">
-              <div class="rest-timer__circle">
-                <svg class="rest-timer__svg" viewBox="0 0 180 180">
-                  <circle class="rest-timer__circle-bg" cx="90" cy="90" r="85"></circle>
-                  <circle id="rest-timer-progress" class="rest-timer__circle-progress" cx="90" cy="90" r="85" stroke-dasharray="534.07" stroke-dashoffset="0"></circle>
-                </svg>
-                <div class="rest-timer__content">
-                  <div class="rest-timer__display" id="rest-timer-display" role="button" tabindex="0" aria-label="Click to start or pause timer">1:00</div>
-                  <div class="rest-timer__controls">
-                    <button id="rest-timer-pause" class="rest-timer__icon-btn" aria-label="Pause timer">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                        <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
-                      </svg>
-                    </button>
-                    <button id="rest-timer-stop" class="rest-timer__icon-btn rest-timer__icon-btn--reset" aria-label="Reset timer">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                        <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
-                        <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
-                      </svg>
-                    </button>
+
+          <!-- Rest Timer Section -->
+          <div class="card card--no-padding">
+            <details id="rest-timer-panel-details" class="collapsible-group">
+              <summary class="collapsible-group__summary">
+                <span>Rest Timer</span>
+              </summary>
+              <div style="padding: 1rem;">
+                <div class="rest-timer__display-container">
+                  <div class="rest-timer__circle">
+                    <svg class="rest-timer__svg" viewBox="0 0 180 180">
+                      <circle class="rest-timer__circle-bg" cx="90" cy="90" r="85"></circle>
+                      <circle id="rest-timer-progress" class="rest-timer__circle-progress" cx="90" cy="90" r="85" stroke-dasharray="534.07" stroke-dashoffset="0"></circle>
+                    </svg>
+                    <div class="rest-timer__content">
+                      <div class="rest-timer__display" id="rest-timer-display" role="button" tabindex="0" aria-label="Click to start or pause timer">1:00</div>
+                      <div class="rest-timer__controls">
+                        <button id="rest-timer-pause" class="rest-timer__icon-btn" aria-label="Pause timer">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M5.5 3.5A1.5 1.5 0 0 1 7 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5zm5 0A1.5 1.5 0 0 1 12 5v6a1.5 1.5 0 0 1-3 0V5a1.5 1.5 0 0 1 1.5-1.5z"/>
+                          </svg>
+                        </button>
+                        <button id="rest-timer-stop" class="rest-timer__icon-btn rest-timer__icon-btn--reset" aria-label="Reset timer">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                            <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2v1z"/>
+                            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </details>
           </div>
-        </div>
 
-        <div class="card" id="history-card">
-          <h2 class="card__title" id="history-title">History</h2>
-          <div id="history-container" role="feed" aria-busy="false">
-            <div id="history-list" class="collapsible-list"></div>
-            <p id="history-empty-state">No activities logged yet. Let's get to work!</p>
+          <!-- History Section -->
+          <div class="card card--no-padding">
+            <details id="history-panel" class="collapsible-group" open>
+              <summary class="collapsible-group__summary">
+                <span id="history-title">History</span>
+              </summary>
+              <div style="padding: 1rem;">
+                <div id="history-container" role="feed" aria-busy="false">
+                  <div id="history-list" class="collapsible-list"></div>
+                  <p id="history-empty-state">No activities logged yet. Let's get to work!</p>
+                </div>
+              </div>
+            </details>
           </div>
         </div>
       </section>
@@ -1215,7 +1184,8 @@
           restTimer: { running: false, paused: false, startTime: 0, remaining: 60, duration: 60 },
           restTimerCollapsed: true,
           customMuscleGroups: [],
-          settingsPanelsCollapsed: { exercises: false, muscleGroups: true, exportImport: true }
+          settingsPanelsCollapsed: { exercises: false, muscleGroups: true, exportImport: true },
+          logPanelsCollapsed: { logActivity: false, restTimer: true, history: false }
         },
         _constants: {
           STORAGE_KEY: 'workoutTrackerState_v5',
@@ -1249,9 +1219,9 @@
         },
 
         save() {
-          const { exercises, history, activeTab, logForm, settings, restTimer, restTimerCollapsed, customMuscleGroups, settingsPanelsCollapsed } = this._data;
+          const { exercises, history, activeTab, logForm, settings, restTimer, restTimerCollapsed, customMuscleGroups, settingsPanelsCollapsed, logPanelsCollapsed } = this._data;
           localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify({
-            exercises, history, activeTab, restTimer, restTimerCollapsed, customMuscleGroups, settingsPanelsCollapsed,
+            exercises, history, activeTab, restTimer, restTimerCollapsed, customMuscleGroups, settingsPanelsCollapsed, logPanelsCollapsed,
             logForm: { exerciseId: logForm.exerciseId, weight: logForm.weight, reps: logForm.reps },
             settings: { autoStartTimer: settings.autoStartTimer }
           }));
@@ -1310,6 +1280,16 @@
         getPanelCollapsed(panelName) {
           if (!this._data.settingsPanelsCollapsed) return true;
           return this._data.settingsPanelsCollapsed[panelName];
+        },
+        setLogPanelCollapsed(panelName, collapsed) {
+          if (!this._data.logPanelsCollapsed) {
+            this._data.logPanelsCollapsed = { logActivity: false, restTimer: true, history: false };
+          }
+          this._data.logPanelsCollapsed[panelName] = collapsed;
+        },
+        getLogPanelCollapsed(panelName) {
+          if (!this._data.logPanelsCollapsed) return panelName === 'restTimer';
+          return this._data.logPanelsCollapsed[panelName];
         },
         
         // Muscle group management
@@ -1434,8 +1414,6 @@
           this.restTimerProgress = get('rest-timer-progress');
           this.restTimerPause = get('rest-timer-pause');
           this.restTimerStop = get('rest-timer-stop');
-          this.restTimerCard = get('rest-timer-card');
-          this.restTimerHeader = get('rest-timer-header');
           this.resetExercisesBtn = get('reset-exercises-btn');
           this.resetMuscleGroupsBtn = get('reset-muscle-groups-btn');
           this.exportDataBtn = get('export-data-btn');
@@ -1594,7 +1572,9 @@
             const summary = document.createElement('summary');
             summary.className = 'collapsible-group__summary';
             const activityCount = activities.length;
-            summary.textContent = `${new Date(dateString).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} (${activityCount} activit${activityCount > 1 ? 'ies' : 'y'})`;
+            const summaryText = document.createElement('span');
+            summaryText.textContent = `${new Date(dateString).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} (${activityCount} activit${activityCount > 1 ? 'ies' : 'y'})`;
+            summary.appendChild(summaryText);
             
             const innerList = document.createElement('ul');
             innerList.className = 'collapsible-group__list';
@@ -1913,13 +1893,6 @@
           });
           DOM.restTimerPause.addEventListener('click', this.handleRestTimerToggle.bind(this));
           DOM.restTimerStop.addEventListener('click', this.handleRestTimerStop.bind(this));
-          DOM.restTimerHeader.addEventListener('click', this.handleRestTimerHeaderToggle.bind(this));
-          DOM.restTimerHeader.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              e.preventDefault();
-              this.handleRestTimerHeaderToggle();
-            }
-          });
           DOM.logWeightDecrease.addEventListener('click', this.handleLogWeightDecrease.bind(this));
           DOM.logWeightIncrease.addEventListener('click', this.handleLogWeightIncrease.bind(this));
           DOM.logRepsDecrease.addEventListener('click', this.handleLogRepsDecrease.bind(this));
@@ -1934,6 +1907,30 @@
           DOM.exportDataBtn.addEventListener('click', this.handleExportData.bind(this));
           DOM.importDataBtn.addEventListener('click', this.handleImportData.bind(this));
           DOM.importFile.addEventListener('change', this.handleImportFile.bind(this));
+          
+          // Log panels collapse state listeners
+          const logActivityPanel = document.getElementById('log-activity-panel');
+          const restTimerPanelDetails = document.getElementById('rest-timer-panel-details');
+          const historyPanel = document.getElementById('history-panel');
+          
+          if (logActivityPanel) {
+            logActivityPanel.addEventListener('toggle', () => {
+              State.setLogPanelCollapsed('logActivity', !logActivityPanel.open);
+              State.save();
+            });
+          }
+          if (restTimerPanelDetails) {
+            restTimerPanelDetails.addEventListener('toggle', () => {
+              State.setLogPanelCollapsed('restTimer', !restTimerPanelDetails.open);
+              State.save();
+            });
+          }
+          if (historyPanel) {
+            historyPanel.addEventListener('toggle', () => {
+              State.setLogPanelCollapsed('history', !historyPanel.open);
+              State.save();
+            });
+          }
           
           // Settings panels collapse state listeners
           const exercisesPanel = document.getElementById('exercises-panel');
@@ -1961,7 +1958,7 @@
           
           this.updateRestTimerDisplay();
           this.resumeRestTimerIfRunning();
-          this.restoreRestTimerCollapsedState();
+          this.restoreLogPanelsState();
           this.restoreSettingsPanelsState();
           UI.renderManageMuscleGroupList();
         },
@@ -1969,14 +1966,19 @@
         // ===================================================================================
         // HELPER FUNCTIONS
         // ===================================================================================
-        restoreRestTimerCollapsedState() {
-          const isCollapsed = State.getRestTimerCollapsed();
-          if (isCollapsed) {
-            DOM.restTimerCard.classList.add('collapsed');
-            DOM.restTimerHeader.setAttribute('aria-expanded', 'false');
-          } else {
-            DOM.restTimerCard.classList.remove('collapsed');
-            DOM.restTimerHeader.setAttribute('aria-expanded', 'true');
+        restoreLogPanelsState() {
+          const logActivityPanel = document.getElementById('log-activity-panel');
+          const restTimerPanelDetails = document.getElementById('rest-timer-panel-details');
+          const historyPanel = document.getElementById('history-panel');
+          
+          if (logActivityPanel) {
+            logActivityPanel.open = !State.getLogPanelCollapsed('logActivity');
+          }
+          if (restTimerPanelDetails) {
+            restTimerPanelDetails.open = !State.getLogPanelCollapsed('restTimer');
+          }
+          if (historyPanel) {
+            historyPanel.open = !State.getLogPanelCollapsed('history');
           }
         },
         restoreSettingsPanelsState() {
@@ -1994,24 +1996,13 @@
             exportImportPanel.open = !State.getPanelCollapsed('exportImport');
           }
         },
-        handleRestTimerHeaderToggle() {
-          const isCollapsed = DOM.restTimerCard.classList.contains('collapsed');
-          if (isCollapsed) {
-            DOM.restTimerCard.classList.remove('collapsed');
-            DOM.restTimerHeader.setAttribute('aria-expanded', 'true');
-            State.setRestTimerCollapsed(false);
-          } else {
-            DOM.restTimerCard.classList.add('collapsed');
-            DOM.restTimerHeader.setAttribute('aria-expanded', 'false');
-            State.setRestTimerCollapsed(true);
-          }
-          State.save();
-        },
         expandRestTimer() {
-          DOM.restTimerCard.classList.remove('collapsed');
-          DOM.restTimerHeader.setAttribute('aria-expanded', 'true');
-          State.setRestTimerCollapsed(false);
-          State.save();
+          const restTimerPanelDetails = document.getElementById('rest-timer-panel-details');
+          if (restTimerPanelDetails && !restTimerPanelDetails.open) {
+            restTimerPanelDetails.open = true;
+            State.setLogPanelCollapsed('restTimer', false);
+            State.save();
+          }
         },
         formatTime(totalSeconds) {
           const safeSeconds = Math.max(0, Math.floor(totalSeconds));
