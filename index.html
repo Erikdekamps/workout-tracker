@@ -2545,21 +2545,29 @@
           
           UI.showDialog({
             title: 'Reset to Default Exercises?',
-            message: 'This will replace all current exercises with the default set. All custom exercises and history will be permanently deleted. This cannot be undone.',
+            message: 'This will replace all current exercises and muscle groups with the default set. Custom exercises and muscle groups will be removed, but your workout history will be preserved.',
             confirmText: 'Reset'
           }).then(confirmed => {
             if (confirmed) {
               const state = State.get();
+              
+              // Preserve history
+              const preservedHistory = state.history;
+              
+              // Reset exercises and custom muscle groups
               state.exercises = [];
-              state.history = [];
+              state.customMuscleGroups = [];
               
               const initialState = State._getInitialState(1);
               state.exercises = initialState.exercises;
               state._nextId = initialState._nextId;
               
+              // Restore history
+              state.history = preservedHistory;
+              
               State.save();
               UI.render();
-              UI.announce('Exercises reset to defaults successfully.');
+              UI.announce('Exercises and muscle groups reset to defaults. History preserved.');
             }
           });
         }
