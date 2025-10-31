@@ -1122,90 +1122,42 @@
         },
         _constants: {
           STORAGE_KEY: 'workoutTrackerState_v5',
-          DEFAULT_EXERCISE_CATEGORIES: [
-            'Abs',
-            'Back',
-            'Biceps',
-            'Chest',
-            'Legs',
-            'Shoulders',
-            'Triceps'
-          ],
-          EXERCISE_TYPE: 'weight_reps', // All exercises use weight & reps
-          // UI strings
+          DEFAULT_EXERCISE_CATEGORIES: ['Abs', 'Back', 'Biceps', 'Chest', 'Legs', 'Shoulders', 'Triceps'],
           SELECT_MUSCLE_GROUP: 'Select muscle group',
           SELECT_EXERCISE: 'Select an exercise',
-          // Timer constants
-          TIMER_ADJUST_STEP: 10, // seconds to add/subtract
-          TIMER_MIN_DURATION: 10, // minimum timer duration in seconds
-          TIMER_MAX_DURATION: 600, // maximum timer duration in seconds (10 minutes)
-          TIMER_UPDATE_INTERVAL: 100, // milliseconds between display updates
-          TIMER_WARNING_THRESHOLD: 10, // seconds remaining to show warning
-          TIMER_WARNING_YELLOW: 20, // seconds for yellow warning
-          TIMER_WARNING_ORANGE: 10, // seconds for orange warning
-          TIMER_WARNING_RED: 5, // seconds for red warning
-          TIMER_AUTO_RESET_DELAY: 2000, // milliseconds before auto-resetting after completion
-          // Vibration pattern for timer completion
+          TIMER_ADJUST_STEP: 10,
+          TIMER_MIN_DURATION: 10,
+          TIMER_MAX_DURATION: 600,
+          TIMER_UPDATE_INTERVAL: 100,
+          TIMER_WARNING_YELLOW: 20,
+          TIMER_WARNING_ORANGE: 10,
+          TIMER_WARNING_RED: 5,
+          TIMER_AUTO_RESET_DELAY: 2000,
           TIMER_VIBRATION_PATTERN: [200, 100, 200]
         },
 
         init() { this._data = this._load(); },
 
         _load() {
-          try {
-            const stored = localStorage.getItem(this._constants.STORAGE_KEY);
-            if (!stored) return this._getInitialState();
-            
-            const parsed = JSON.parse(stored);
-            
-            // Validate parsed data structure
-            if (!parsed || typeof parsed !== 'object') {
-              console.warn('Invalid stored data, using defaults');
-              return this._getInitialState();
-            }
-            
-            // Calculate next ID from existing items
-            const allIds = [
-              ...(parsed.exercises || []),
-              ...(parsed.history || [])
-            ].map(item => parseInt(item.id.split('-')[1])).filter(Boolean);
-            const nextId = allIds.length ? Math.max(...allIds) + 1 : 1;
-            
-            // Merge with defaults to ensure all properties exist
-            const state = { ...this._getInitialState(nextId), ...parsed };
-            
-            // Migrate old timer format if needed
-            if (state.restTimer && !state.restTimer.hasOwnProperty('remaining')) {
-              state.restTimer.remaining = state.restTimer.duration || 60;
-            }
-            
-            return state;
-          } catch (error) {
-            console.error('Failed to load state:', error);
-            return this._getInitialState();
-          }
+          const stored = localStorage.getItem(this._constants.STORAGE_KEY);
+          if (!stored) return this._getInitialState();
+          
+          const parsed = JSON.parse(stored);
+          const allIds = [...(parsed.exercises || []), ...(parsed.history || [])]
+            .map(item => parseInt(item.id.split('-')[1]))
+            .filter(Boolean);
+          const nextId = allIds.length ? Math.max(...allIds) + 1 : 1;
+          
+          return { ...this._getInitialState(nextId), ...parsed };
         },
 
         save() {
-          try {
-            const { exercises, history, activeTab, logForm, settings, restTimer, restTimerCollapsed, customMuscleGroups } = this._data;
-            localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify({
-              exercises,
-              history,
-              activeTab,
-              logForm: { exerciseId: logForm.exerciseId, weight: logForm.weight, reps: logForm.reps },
-              settings: { autoStartTimer: settings.autoStartTimer },
-              restTimer,
-              restTimerCollapsed,
-              customMuscleGroups
-            }));
-          } catch (error) {
-            console.error('Failed to save state:', error);
-            // Notify user if storage quota exceeded or other error
-            if (error.name === 'QuotaExceededError') {
-              alert('Storage quota exceeded. Please delete some history to free up space.');
-            }
-          }
+          const { exercises, history, activeTab, logForm, settings, restTimer, restTimerCollapsed, customMuscleGroups } = this._data;
+          localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify({
+            exercises, history, activeTab, restTimer, restTimerCollapsed, customMuscleGroups,
+            logForm: { exerciseId: logForm.exerciseId, weight: logForm.weight, reps: logForm.reps },
+            settings: { autoStartTimer: settings.autoStartTimer }
+          }));
         },
 
         _getInitialState(startId = 1) {
@@ -1231,11 +1183,6 @@
         get() { return this._data; },
         getConstants() { return this._constants; },
         generateId(prefix) {
-          // Protect against ID overflow (extremely unlikely but theoretically possible)
-          if (this._data._nextId >= Number.MAX_SAFE_INTEGER) {
-            console.warn('ID counter approaching maximum, resetting to safe value');
-            this._data._nextId = 1;
-          }
           return `${prefix}-${this._data._nextId++}`;
         },
         addExercise(exercise) { this._data.exercises.push(exercise); },
@@ -1290,45 +1237,25 @@
           return this._data.customMuscleGroups || [];
         },
         
-        // Helper to get sorted exercises by category
         getExercisesByCategory(category) {
           return this._data.exercises
             .filter(ex => ex.category === category)
             .sort((a, b) => a.name.localeCompare(b.name));
         },
-        
-        // Helper to find an exercise by ID
         findExercise(id) {
           return this._data.exercises.find(ex => ex.id === id);
         },
-        
-        // Helper to group exercises by category
-        groupExercisesByCategory(exercises) {
-          return exercises.reduce((acc, ex) => {
-            (acc[ex.category] = acc[ex.category] || []).push(ex);
-            return acc;
-          }, {});
-        },
-        
-        // Helper to filter exercises by name query
         filterExercisesByName(query) {
-          const lowerQuery = query.trim().toLowerCase();
+          if (!query) return this._data.exercises;
+          const lowerQuery = query.toLowerCase();
           return this._data.exercises.filter(ex => ex.name.toLowerCase().includes(lowerQuery));
         },
-        
-        // Helper to check if exercise name already exists (case-insensitive)
         exerciseNameExists(name, excludeId = null) {
           const lowerName = name.toLowerCase();
-          return this._data.exercises.some(ex => 
-            ex.id !== excludeId && ex.name.toLowerCase() === lowerName
-          );
+          return this._data.exercises.some(ex => ex.id !== excludeId && ex.name.toLowerCase() === lowerName);
         },
-        
-        // Helper to get most recent activity for an exercise
         getMostRecentActivity(exerciseId) {
-          return this._data.history
-            .filter(item => item.exerciseId === exerciseId)
-            .sort((a, b) => b.timestamp - a.timestamp)[0];
+          return this._data.history.filter(item => item.exerciseId === exerciseId).sort((a, b) => b.timestamp - a.timestamp)[0];
         }
       };
 
@@ -1486,38 +1413,28 @@
           }
         },
         renderHistory() {
-          const { exercises, history, logForm } = State.get();
+          const { history, logForm } = State.get();
           const filterExerciseId = logForm.exerciseId;
           const selectedMuscleGroup = DOM.logMuscleGroupSelect.value;
           let historyToRender = history;
-          const isFiltered = !!(filterExerciseId && filterExerciseId !== '') || !!(selectedMuscleGroup && selectedMuscleGroup !== '');
           
-          // Show/hide clear filter button
-          DOM.clearHistoryFilter.style.display = isFiltered ? 'inline-flex' : 'none';
+          DOM.clearHistoryFilter.style.display = (filterExerciseId || selectedMuscleGroup) ? 'inline-flex' : 'none';
           
-          // Filter by specific exercise if selected
           if (filterExerciseId) {
             const filteredExercise = State.findExercise(filterExerciseId);
             DOM.historyTitle.textContent = `History for ${filteredExercise?.name || 'Unknown'}`;
             historyToRender = history.filter(item => item.exerciseId === filterExerciseId);
-          } 
-          // Filter by muscle group if selected (but no specific exercise)
-          else if (selectedMuscleGroup) {
-            // Cache the exercise IDs to avoid repeated lookups
-            const exerciseIds = State.getExercisesByCategory(selectedMuscleGroup).map(ex => ex.id);
-            const exerciseIdSet = new Set(exerciseIds);
-            historyToRender = history.filter(item => exerciseIdSet.has(item.exerciseId));
+          } else if (selectedMuscleGroup) {
+            const exerciseIds = new Set(State.getExercisesByCategory(selectedMuscleGroup).map(ex => ex.id));
+            historyToRender = history.filter(item => exerciseIds.has(item.exerciseId));
             DOM.historyTitle.textContent = `History for ${selectedMuscleGroup}`;
-          } 
-          // No filter - show all
-          else {
+          } else {
             DOM.historyTitle.textContent = 'History';
           }
 
           DOM.historyList.innerHTML = '';
           const sortedHistory = [...historyToRender].sort((a, b) => b.timestamp - a.timestamp);
           
-          // Show/hide empty state
           if (sortedHistory.length === 0) {
             DOM.historyEmptyState.hidden = false;
             DOM.historyList.hidden = true;
@@ -1546,37 +1463,19 @@
             const innerList = document.createElement('ul');
             innerList.className = 'collapsible-group__list';
             
-            // Cache exercise lookups for this date group
-            const exerciseCache = new Map();
             activities.forEach(item => {
-              // Validate activity item has required fields
-              if (!item || !item.exerciseId || typeof item.timestamp !== 'number') {
-                console.warn('Invalid activity item:', item);
-                return;
-              }
+              const exercise = State.findExercise(item.exerciseId);
+              if (!exercise) return;
               
-              let exercise = exerciseCache.get(item.exerciseId);
-              if (!exercise) {
-                exercise = State.findExercise(item.exerciseId);
-                if (!exercise) {
-                  console.warn('Exercise not found for activity:', item.exerciseId);
-                  return;
-                }
-                exerciseCache.set(item.exerciseId, exercise);
-              }
-              
-              // All exercises use weight + reps format - validate numeric values
-              const weight = typeof item.weight === 'number' ? item.weight : 0;
-              const reps = typeof item.reps === 'number' ? item.reps : 0;
-              const metaText = `${weight} kg × ${reps} reps`;
+              const metaText = `${item.weight} kg × ${item.reps} reps`;
               const timeString = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
               
               const li = document.createElement('li');
               li.className = 'history-list__item';
               li.style.cursor = 'pointer';
               li.setAttribute('data-exercise-id', item.exerciseId);
-              li.setAttribute('data-weight', weight);
-              li.setAttribute('data-reps', reps);
+              li.setAttribute('data-weight', item.weight);
+              li.setAttribute('data-reps', item.reps);
               li.innerHTML = `<div class="history-list__details"><span class="history-list__exercise">${exercise.name}</span><span class="history-list__meta">${metaText}</span></div><span class="history-list__time">${timeString}</span>`;
               innerList.appendChild(li);
             });
@@ -1592,30 +1491,19 @@
           DOM.newExerciseInputs.category.innerHTML = this.createSelectOptions(muscleGroups.map(c => ({ value: c, label: c })));
           DOM.manageExerciseList.innerHTML = '';
           
-          // Cache filtered results to avoid repeated filtering
           const filteredExercises = State.filterExercisesByName(settings.filter);
-          const hasExercises = filteredExercises.length > 0;
-          DOM.manageExerciseEmptyState.hidden = hasExercises;
-          DOM.manageExerciseList.hidden = !hasExercises;
+          DOM.manageExerciseEmptyState.hidden = filteredExercises.length > 0;
+          DOM.manageExerciseList.hidden = filteredExercises.length === 0;
           
-          if (hasExercises) {
-            // Sort by category first, then by name within category
-            const sortedExercises = [...filteredExercises].sort((a, b) => {
-              if (a.category !== b.category) {
-                return a.category.localeCompare(b.category);
-              }
-              return a.name.localeCompare(b.name);
-            });
+          if (filteredExercises.length > 0) {
+            const sortedExercises = [...filteredExercises].sort((a, b) => 
+              a.category !== b.category ? a.category.localeCompare(b.category) : a.name.localeCompare(b.name)
+            );
             
-            // Create a flat list with ul
             const list = document.createElement('ul');
             list.className = 'collapsible-group__list';
             list.style.padding = '0';
-            
-            sortedExercises.forEach(ex => {
-              list.appendChild(this._createExerciseListItem(ex));
-            });
-            
+            sortedExercises.forEach(ex => list.appendChild(this._createExerciseListItem(ex)));
             DOM.manageExerciseList.appendChild(list);
           }
         },
