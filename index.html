@@ -1063,7 +1063,7 @@
               <button type="submit" class="button button--primary form-group--full-width">Add Exercise</button>
             </form>
 
-            <div id="manage-exercise-list" class="collapsible-list"></div>
+            <div id="manage-exercise-list" class="collapsible-list" style="margin-top: 1rem;"></div>
             <p id="manage-exercise-empty-state" hidden>No exercises match your filter.</p>
 
             <h3 style="font-size: 1rem; font-weight: 600; margin: 2rem 0 1rem; color: var(--color-text);">Add Custom Muscle Group</h3>
@@ -1510,7 +1510,6 @@
             
             const list = document.createElement('ul');
             list.className = 'collapsible-group__list';
-            list.style.padding = '0';
             sortedExercises.forEach(ex => list.appendChild(this._createExerciseListItem(ex)));
             DOM.manageExerciseList.appendChild(list);
           }
@@ -1670,7 +1669,6 @@
           if (hasCustomGroups) {
             const list = document.createElement('ul');
             list.className = 'collapsible-group__list';
-            list.style.padding = '0';
             
             customGroups.sort((a, b) => a.localeCompare(b)).forEach(groupName => {
               const li = document.createElement('li');
