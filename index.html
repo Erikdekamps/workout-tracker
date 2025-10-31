@@ -1123,6 +1123,7 @@
         _constants: {
           STORAGE_KEY: 'workoutTrackerState_v5',
           DEFAULT_EXERCISE_CATEGORIES: [
+            'Abs',
             'Back',
             'Biceps',
             'Chest',
@@ -1212,6 +1213,7 @@
           const generateId = (prefix) => `${prefix}-${nextId++}`;
           
           const defaultExercises = [
+            { id: generateId('ex'), name: 'Ab Crunch Machine', category: 'Abs', type: 'weight_reps', notes: 'Sit in machine with chest against pad. Grip handles and crunch forward, engaging abs. Control the return.' },
             { id: generateId('ex'), name: 'Row Deltoid', category: 'Back', type: 'weight_reps', notes: 'Sit in machine with chest against pad. Grip handles and pull back, squeezing shoulder blades together. Control the return.' },
             { id: generateId('ex'), name: 'Barbell Curl', category: 'Biceps', type: 'weight_reps', notes: 'Stand with barbell, arms extended. Curl bar to shoulders, keeping elbows still. Lower with control.' },
             { id: generateId('ex'), name: 'Chest Press', category: 'Chest', type: 'weight_reps', notes: 'Sit in machine, grip handles at chest level. Press forward until arms extended. Return with control.' },
