@@ -1032,7 +1032,14 @@
                     <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
                     <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
                   </svg>
-                  Reset to Defaults
+                  Reset Exercises
+                </button>
+                <button class="dropdown__item dropdown__item--danger" id="reset-muscle-groups-btn">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 0.5rem; vertical-align: middle;">
+                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+                  </svg>
+                  Reset Muscle Groups
                 </button>
               </div>
             </div>
@@ -1306,6 +1313,7 @@
           this.manageExercisesMenuToggle = get('manage-exercises-menu-toggle');
           this.manageExercisesMenu = get('manage-exercises-menu');
           this.resetExercisesBtn = get('reset-exercises-btn');
+          this.resetMuscleGroupsBtn = get('reset-muscle-groups-btn');
         }
       };
 
@@ -1744,6 +1752,7 @@
           DOM.manageMuscleGroupList.addEventListener('click', this.handleManageMuscleGroupListClick.bind(this));
           DOM.manageExercisesMenuToggle.addEventListener('click', this.handleMenuToggle.bind(this));
           DOM.resetExercisesBtn.addEventListener('click', this.handleResetExercises.bind(this));
+          DOM.resetMuscleGroupsBtn.addEventListener('click', this.handleResetMuscleGroups.bind(this));
           document.addEventListener('click', this.handleOutsideClick.bind(this));
           this.updateRestTimerDisplay();
           this.resumeRestTimerIfRunning();
@@ -2432,30 +2441,52 @@
           DOM.manageExercisesMenuToggle.setAttribute('aria-expanded', 'false');
           
           UI.showDialog({
-            title: 'Reset to Default Exercises?',
-            message: 'This will replace all current exercises and muscle groups with the default set. Custom exercises and muscle groups will be removed, but your workout history will be preserved.',
-            confirmText: 'Reset'
+            title: 'Reset Exercises to Default?',
+            message: 'This will replace all current exercises with the default set. Custom exercises will be removed, but your workout history and muscle groups will be preserved.',
+            confirmText: 'Reset Exercises'
           }).then(confirmed => {
             if (confirmed) {
               const state = State.get();
-              
-              // Preserve history
               const preservedHistory = state.history;
               
-              // Reset exercises and custom muscle groups
               state.exercises = [];
-              state.customMuscleGroups = [];
-              
               const initialState = State._getInitialState(1);
               state.exercises = initialState.exercises;
               state._nextId = initialState._nextId;
-              
-              // Restore history
               state.history = preservedHistory;
               
               State.save();
               UI.render();
-              UI.announce('Exercises and muscle groups reset to defaults. History preserved.');
+              UI.announce('Exercises reset to defaults. History and muscle groups preserved.');
+            }
+          });
+        },
+        
+        handleResetMuscleGroups() {
+          DOM.manageExercisesMenu.classList.remove('show');
+          DOM.manageExercisesMenuToggle.setAttribute('aria-expanded', 'false');
+          
+          UI.showDialog({
+            title: 'Reset Muscle Groups to Default?',
+            message: 'This will remove all custom muscle groups. Exercises in custom muscle groups will be moved to the first default category (Abs). Your exercises and workout history will be preserved.',
+            confirmText: 'Reset Muscle Groups'
+          }).then(confirmed => {
+            if (confirmed) {
+              const state = State.get();
+              const defaultCategories = State.getConstants().DEFAULT_EXERCISE_CATEGORIES;
+              const fallbackCategory = defaultCategories[0];
+              
+              state.exercises.forEach(ex => {
+                if (!defaultCategories.includes(ex.category)) {
+                  ex.category = fallbackCategory;
+                }
+              });
+              
+              state.customMuscleGroups = [];
+              
+              State.save();
+              UI.render();
+              UI.announce('Muscle groups reset to defaults. Exercises moved to default categories.');
             }
           });
         }
