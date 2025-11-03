@@ -1349,7 +1349,7 @@ IMPORT DATA:
           renamedDefaultGroups: {},
           settingsPanelsCollapsed: { exercises: false, muscleGroups: true, exportImport: true },
           logPanelsCollapsed: { logActivity: false, restTimer: true, history: false },
-          historyDatesOpen: []
+          historyDatesOpen: null  // null = never set (default to first open), [] = explicitly closed all
         },
         _constants: {
           STORAGE_KEY: 'workoutTrackerState_v5',
@@ -1379,9 +1379,9 @@ IMPORT DATA:
             const initialState = this._getInitialState();
             const loadedState = { ...initialState, ...parsed };
             
-            // Ensure historyDatesOpen is initialized
-            if (!loadedState.historyDatesOpen) {
-              loadedState.historyDatesOpen = [];
+            // Ensure historyDatesOpen is initialized (null = never set, keep null)
+            if (loadedState.historyDatesOpen === undefined) {
+              loadedState.historyDatesOpen = null;
             }
             
             return loadedState;
@@ -1545,7 +1545,7 @@ IMPORT DATA:
         },
         
         getHistoryDatesOpen() {
-          return this._data.historyDatesOpen || [];
+          return this._data.historyDatesOpen;  // Can be null, [], or array of dates
         },
         setHistoryDatesOpen(dates) {
           this._data.historyDatesOpen = dates;
@@ -1902,8 +1902,8 @@ IMPORT DATA:
             const activityCount = activities.length;
             const summaryTextContent = `${new Date(dateString).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} (${activityCount} activit${activityCount > 1 ? 'ies' : 'y'})`;
             
-            // Restore previous open state, or open first date by default if nothing was previously open
-            if (savedDates.length > 0 ? savedDates.includes(summaryTextContent) : index === 0) {
+            // Restore open state: null = never set (default first open), [] = explicitly closed all, array = specific dates
+            if (savedDates === null ? index === 0 : savedDates.includes(summaryTextContent)) {
               details.open = true;
             }
             
@@ -3713,8 +3713,8 @@ IMPORT DATA:
               }
               
               // Ensure all other state fields are properly initialized
-              if (!state.historyDatesOpen) {
-                state.historyDatesOpen = [];
+              if (state.historyDatesOpen === undefined) {
+                state.historyDatesOpen = null;  // null = never set
               }
               if (!state.settingsPanelsCollapsed) {
                 state.settingsPanelsCollapsed = { exercises: false, muscleGroups: true, exportImport: true };
