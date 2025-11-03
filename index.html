@@ -1,6 +1,122 @@
 <!DOCTYPE html>
-<html lang="en">
+<!--
+╔═══════════════════════════════════════════════════════════════════════════════╗
+║                         WORKOUT TRACKER APPLICATION                           ║
+╚═══════════════════════════════════════════════════════════════════════════════╝
 
+VERSION: 1.0.0
+LAST UPDATED: 2025-11-03
+ARCHITECTURE: Vanilla JavaScript SPA with Module Pattern
+
+═══════════════════════════════════════════════════════════════════════════════
+  CORE WORKFLOW
+═══════════════════════════════════════════════════════════════════════════════
+1. Select muscle group → Filters exercises
+2. Select exercise → Pre-fills last weight/reps
+3. Enter weight/reps → Auto-saves to localStorage
+4. Submit → Logs activity, starts timer, updates history
+5. Timer countdown → Alerts at 20s/10s/5s, vibrates on complete
+
+DATA MODEL:
+- Exercises: id, name, category, type, notes
+- History: timestamp, exerciseId, weight, reps
+- Settings: restDuration, showTimer, collapsedPanels
+- Muscle Groups: 7 defaults + custom groups
+- Persistence: localStorage with debounced saves (500ms)
+
+MODULES:
+- State: Centralized state with localStorage persistence
+- DOM: Cached element references
+- UI: Rendering and view generation
+- Events: Event handling and user interactions
+- RestTimer: Background timer with progress tracking
+
+═══════════════════════════════════════════════════════════════════════════════
+  FUNCTION INVENTORY
+═══════════════════════════════════════════════════════════════════════════════
+
+STATE MODULE:
+  init(), save(), get(), getConstants(), _load(), _getInitialState()
+  generateSlugId(), addExercise(), updateExercise(), deleteExercise(), findExercise()
+  getExercisesByCategory(), filterExercisesByName(), exerciseNameExists()
+  addHistoryItem(), updateHistoryItem(), deleteHistoryItem(), getMostRecentActivity()
+  getAllMuscleGroups(), addCustomMuscleGroup(), deleteCustomMuscleGroup()
+  updateMuscleGroup(), muscleGroupExists(), isDefaultMuscleGroup(), getCustomMuscleGroups()
+  setActiveTab(), setLogFormField(), setFilter(), setEditingExercise(), setEditingMuscleGroup()
+  setEditingHistory(), setRestTimer(), getRestTimer(), setRestTimerCollapsed()
+  getRestTimerCollapsed(), setPanelCollapsed(), getPanelCollapsed(), setLogPanelCollapsed()
+  getLogPanelCollapsed(), getHistoryDatesOpen(), setHistoryDatesOpen()
+
+DOM MODULE:
+  init(), validate()
+
+UI MODULE:
+  render(), renderTabs(), renderLogForm(), renderHistory()
+  renderManageExerciseList(), renderManageMuscleGroupList()
+  updateHistoryOnly(), updateManageExerciseListOnly(), updateManageMuscleGroupListOnly()
+  updateLogFormVisibility(), updateExerciseSelectFromMuscleGroup()
+  _createExerciseListItem(), _createExerciseDisplayView(), _createExerciseEditView()
+  _createHistoryDisplayView(), _createHistoryEditView()
+  _createMuscleGroupListItem(), _createMuscleGroupDisplayView(), _createMuscleGroupEditView()
+  _createIconButton(), _createTextButton()
+  createSelectOptions(), groupActivitiesByDate(), showDialog(), announce()
+
+EVENTS MODULE:
+  init(), handleTabClick(), handleLogFormSubmit(), handleMuscleGroupChange()
+  handleExerciseChange(), handleWeightRepChange(), handleWeightRepAdjust()
+  handleAddExerciseSubmit(), handleExerciseAction(), handleExerciseSave(), handleExerciseCancel()
+  handleHistoryAction(), handleHistorySave(), handleHistoryCancel()
+  handleAddMuscleGroupSubmit(), handleMuscleGroupAction(), handleMuscleGroupSave()
+  handleMuscleGroupCancel(), handleFilterInput(), handleClearFilter()
+  handleResetExercises(), handleResetMuscleGroups(), handleExportData(), handleImportData()
+  handleRestTimerControl(), handleRestTimerToggle(), handlePanelToggle()
+  handleExerciseInfoToggle(), validateWeight(), validateReps(), validateTimerState()
+
+REST TIMER MODULE:
+  start(), pause(), resume(), stop(), _tick(), _updateDisplay(), _formatTime()
+
+═══════════════════════════════════════════════════════════════════════════════
+  KEY WORKFLOWS
+═══════════════════════════════════════════════════════════════════════════════
+
+LOG WORKOUT:
+  1. Select muscle group → handleMuscleGroupChange()
+  2. Filter exercises by category → updateExerciseSelectFromMuscleGroup()
+  3. Select exercise → handleExerciseChange()
+  4. Enter weight/reps → handleWeightRepChange()
+  5. Submit form → handleLogFormSubmit()
+  6. Add to history → State.addHistoryItem()
+  7. Start rest timer → RestTimer.start()
+  8. Update UI → UI.updateHistoryOnly()
+
+ADD EXERCISE:
+  1. Enter name/category/notes → (form inputs)
+  2. Validate uniqueness → State.exerciseNameExists()
+  3. Generate slug ID → State.generateSlugId()
+  4. Add to state → State.addExercise()
+  5. Save to localStorage → State.save()
+  6. Update exercise lists → UI.updateManageExerciseListOnly(), UI.renderLogForm()
+
+EDIT HISTORY:
+  1. Click edit button → handleHistoryAction()
+  2. Show inline edit form → UI._createHistoryEditView()
+  3. Modify values → (form inputs)
+  4. Save changes → handleHistorySave()
+  5. Update history display → State.updateHistoryItem()
+  6. Preserve scroll position → UI.updateHistoryOnly()
+
+IMPORT DATA:
+  1. Upload JSON file → handleImportData()
+  2. Validate size (10MB limit) → (check JSON length)
+  3. Parse and detect format version → JSON.parse()
+  4. Map legacy/modern structure → State.generateSlugId() (if legacy)
+  5. Normalize state → State._getInitialState()
+  6. Save to localStorage → State.save()
+  7. Full UI render → UI.render()
+
+╚═══════════════════════════════════════════════════════════════════════════════╝
+-->
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1209,6 +1325,8 @@
           settings: { filter: '', editingExerciseId: null, editingMuscleGroup: null, editingHistoryTimestamp: null, autoStartTimer: true },
           restTimer: { running: false, paused: false, startTime: 0, remaining: 60, duration: 60 },
           customMuscleGroups: [],
+          deletedDefaultGroups: [],
+          renamedDefaultGroups: {},
           settingsPanelsCollapsed: { exercises: false, muscleGroups: true, exportImport: true },
           logPanelsCollapsed: { logActivity: false, restTimer: true, history: false },
           historyDatesOpen: []
@@ -1235,35 +1353,48 @@
           const stored = localStorage.getItem(this._constants.STORAGE_KEY);
           if (!stored) return this._getInitialState();
           
-          const parsed = JSON.parse(stored);
-          
-          // We no longer use numeric IDs, so we don't need to calculate nextId
-          const initialState = this._getInitialState();
-          const loadedState = { ...initialState, ...parsed };
-          
-          // Ensure historyDatesOpen is initialized
-          if (!loadedState.historyDatesOpen) {
-            loadedState.historyDatesOpen = [];
+          try {
+            const parsed = JSON.parse(stored);
+            
+            const initialState = this._getInitialState();
+            const loadedState = { ...initialState, ...parsed };
+            
+            // Ensure historyDatesOpen is initialized
+            if (!loadedState.historyDatesOpen) {
+              loadedState.historyDatesOpen = [];
+            }
+            
+            return loadedState;
+          } catch (error) {
+            console.error('Failed to load state from localStorage:', error);
+            localStorage.setItem(this._constants.STORAGE_KEY + '_backup_error', stored);
+            return this._getInitialState();
           }
-          
-          return loadedState;
         },
 
         save() {
-          const { exercises, history, activeTab, logForm, settings, restTimer, restTimerCollapsed, customMuscleGroups, settingsPanelsCollapsed, logPanelsCollapsed, historyDatesOpen } = this._data;
-          localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify({
-            exercises, 
-            history, 
-            activeTab, 
-            restTimer, 
-            restTimerCollapsed, 
-            customMuscleGroups, 
-            settingsPanelsCollapsed, 
-            logPanelsCollapsed, 
-            historyDatesOpen: historyDatesOpen || [],
-            logForm: { exerciseId: logForm.exerciseId, weight: logForm.weight, reps: logForm.reps },
-            settings: { autoStartTimer: settings.autoStartTimer }
-          }));
+          const { exercises, history, activeTab, logForm, settings, restTimer, restTimerCollapsed, customMuscleGroups, deletedDefaultGroups, renamedDefaultGroups, settingsPanelsCollapsed, logPanelsCollapsed, historyDatesOpen } = this._data;
+          try {
+            localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify({
+              exercises, 
+              history, 
+              activeTab, 
+              restTimer, 
+              restTimerCollapsed, 
+              customMuscleGroups,
+              deletedDefaultGroups: deletedDefaultGroups || [],
+              renamedDefaultGroups: renamedDefaultGroups || {},
+              settingsPanelsCollapsed, 
+              logPanelsCollapsed, 
+              historyDatesOpen: historyDatesOpen || [],
+              logForm: { exerciseId: logForm.exerciseId, weight: logForm.weight, reps: logForm.reps },
+              settings: { autoStartTimer: settings.autoStartTimer }
+            }));
+            return true;
+          } catch (error) {
+            console.error('Failed to save state to localStorage:', error);
+            return false;
+          }
         },
 
         _getInitialState() {
@@ -1294,10 +1425,13 @@
             return baseSlug;
           }
           
-          // If it exists, append a number
           let counter = 2;
+          const MAX_ATTEMPTS = 1000;
           while (this._data.exercises.find(ex => ex.id === `${baseSlug}_${counter}`)) {
             counter++;
+            if (counter > MAX_ATTEMPTS) {
+              return `${baseSlug}_${Date.now()}`;
+            }
           }
           return `${baseSlug}_${counter}`;
         },
@@ -1325,12 +1459,47 @@
           this._data.history = this._data.history.filter(h => h.timestamp !== timestamp);
         },
         setActiveTab(tabId) { this._data.activeTab = tabId; },
-        setLogFormField(field, value) { this._data.logForm[field] = value; },
+        setLogFormField(field, value) {
+          // Validate numeric fields
+          if (field === 'weight') {
+            const num = parseFloat(value);
+            if (value !== '' && (isNaN(num) || num < 0 || num > 9999)) {
+              console.warn(`Invalid weight value: ${value}`);
+              return false;
+            }
+          } else if (field === 'reps') {
+            const num = parseInt(value, 10);
+            if (value !== '' && (isNaN(num) || num < 1 || num > 9999)) {
+              console.warn(`Invalid reps value: ${value}`);
+              return false;
+            }
+          }
+          this._data.logForm[field] = value;
+          return true;
+        },
         setFilter(query) { this._data.settings.filter = query; },
         setEditingExercise(id) { this._data.settings.editingExerciseId = id; },
         setEditingMuscleGroup(name) { this._data.settings.editingMuscleGroup = name; },
         setEditingHistory(timestamp) { this._data.settings.editingHistoryTimestamp = timestamp; },
-        setRestTimer(data) { Object.assign(this._data.restTimer, data); },
+        setRestTimer(data) {
+          // Validate timer data if numeric fields are provided
+          if (data.remaining !== undefined) {
+            const num = parseFloat(data.remaining);
+            if (isNaN(num) || num < 0) {
+              console.warn(`Invalid timer remaining value: ${data.remaining}`);
+              return false;
+            }
+          }
+          if (data.duration !== undefined) {
+            const num = parseFloat(data.duration);
+            if (isNaN(num) || num < 0) {
+              console.warn(`Invalid timer duration value: ${data.duration}`);
+              return false;
+            }
+          }
+          Object.assign(this._data.restTimer, data);
+          return true;
+        },
         getRestTimer() { return this._data.restTimer; },
         setRestTimerCollapsed(collapsed) { this._data.restTimerCollapsed = collapsed; },
         getRestTimerCollapsed() { return this._data.restTimerCollapsed; },
@@ -1365,8 +1534,15 @@
         // Muscle group management
         getAllMuscleGroups() {
           const defaults = [...this._constants.DEFAULT_EXERCISE_CATEGORIES];
+          const deletedDefaults = this._data.deletedDefaultGroups || [];
+          const renamed = this._data.renamedDefaultGroups || {};
+          
+          const activeDefaults = defaults
+            .filter(name => !deletedDefaults.includes(name))
+            .map(name => renamed[name] || name);
+          
           const custom = this._data.customMuscleGroups || [];
-          return [...defaults, ...custom].sort((a, b) => a.localeCompare(b));
+          return [...activeDefaults, ...custom].sort((a, b) => a.localeCompare(b));
         },
         addCustomMuscleGroup(name) {
           if (!this._data.customMuscleGroups) {
@@ -1378,13 +1554,23 @@
           const isDefault = this._constants.DEFAULT_EXERCISE_CATEGORIES.includes(name);
           
           if (isDefault) {
-            this._constants.DEFAULT_EXERCISE_CATEGORIES = this._constants.DEFAULT_EXERCISE_CATEGORIES.filter(g => g !== name);
+            if (!this._data.deletedDefaultGroups) {
+              this._data.deletedDefaultGroups = [];
+            }
+            if (!this._data.deletedDefaultGroups.includes(name)) {
+              this._data.deletedDefaultGroups.push(name);
+            }
           } else {
             this._data.customMuscleGroups = this._data.customMuscleGroups.filter(g => g !== name);
           }
           
           const allRemainingGroups = this.getAllMuscleGroups();
           const fallbackCategory = allRemainingGroups[0];
+          
+          if (!fallbackCategory) {
+            console.error('No muscle groups available! Cannot reassign exercises.');
+            return;
+          }
           
           this._data.exercises.forEach(ex => {
             if (ex.category === name) {
@@ -1396,11 +1582,15 @@
           const isDefault = this._constants.DEFAULT_EXERCISE_CATEGORIES.includes(oldName);
           
           if (isDefault) {
-            const index = this._constants.DEFAULT_EXERCISE_CATEGORIES.indexOf(oldName);
-            this._constants.DEFAULT_EXERCISE_CATEGORIES[index] = newName;
+            if (!this._data.renamedDefaultGroups) {
+              this._data.renamedDefaultGroups = {};
+            }
+            this._data.renamedDefaultGroups[oldName] = newName;
           } else {
             const index = this._data.customMuscleGroups.indexOf(oldName);
-            this._data.customMuscleGroups[index] = newName;
+            if (index !== -1) {
+              this._data.customMuscleGroups[index] = newName;
+            }
           }
           
           this._data.exercises.forEach(ex => {
@@ -1493,6 +1683,40 @@
           this.importDataBtn = get('import-data-btn');
           this.importFile = get('import-file');
           this.importTextarea = get('import-textarea');
+          
+          // Validate all required DOM elements exist
+          this.validate();
+        },
+        
+        validate() {
+          const missing = [];
+          const checkElement = (name, element) => {
+            if (!element) missing.push(name);
+          };
+          
+          checkElement('announcer', this.announcer);
+          checkElement('tabs', this.tabs);
+          checkElement('logForm', this.logForm);
+          checkElement('logMuscleGroupSelect', this.logMuscleGroupSelect);
+          checkElement('logExerciseGroup', this.logExerciseGroup);
+          checkElement('logExerciseSelect', this.logExerciseSelect);
+          checkElement('exerciseInfoToggle', this.exerciseInfoToggle);
+          checkElement('exerciseInfoPanel', this.exerciseInfoPanel);
+          checkElement('logGroups.weight', this.logGroups.weight);
+          checkElement('logGroups.reps', this.logGroups.reps);
+          checkElement('logInputs.weight', this.logInputs.weight);
+          checkElement('logInputs.reps', this.logInputs.reps);
+          checkElement('historyContainer', this.historyContainer);
+          checkElement('historyList', this.historyList);
+          checkElement('dialog', this.dialog);
+          checkElement('restTimerDisplay', this.restTimerDisplay);
+          
+          if (missing.length > 0) {
+            console.error('Missing DOM elements:', missing);
+            throw new Error(`DOM validation failed: Missing elements - ${missing.join(', ')}`);
+          }
+          
+          return true;
         }
       };
 
@@ -1906,7 +2130,17 @@
           const detailsDiv = document.createElement('div');
           detailsDiv.className = 'history-list__details';
           detailsDiv.style.cursor = 'pointer';
-          detailsDiv.innerHTML = `<span class="history-list__exercise">${exercise.name}</span><span class="history-list__meta">${metaText}</span>`;
+          
+          const exerciseSpan = document.createElement('span');
+          exerciseSpan.className = 'history-list__exercise';
+          exerciseSpan.textContent = exercise.name;
+          
+          const metaSpan = document.createElement('span');
+          metaSpan.className = 'history-list__meta';
+          metaSpan.textContent = metaText;
+          
+          detailsDiv.appendChild(exerciseSpan);
+          detailsDiv.appendChild(metaSpan);
           
           const actionsDiv = document.createElement('div');
           actionsDiv.className = 'history-list__actions';
@@ -2267,6 +2501,7 @@
       // ===================================================================================
       const Events = {
         restTimerInterval: null,
+        saveDebounceTimer: null,
         
         // ===================================================================================
         // INITIALIZATION
@@ -2360,6 +2595,26 @@
         // ===================================================================================
         // HELPER FUNCTIONS
         // ===================================================================================
+        validateWeight(weight) {
+          const num = parseFloat(weight);
+          return !isNaN(num) && num >= 0 && num <= 9999;
+        },
+        
+        validateReps(reps) {
+          const num = parseInt(reps, 10);
+          return !isNaN(num) && num >= 1 && num <= 9999;
+        },
+        
+        validateTimerState(timer) {
+          if (!timer || typeof timer.remaining !== 'number' || typeof timer.duration !== 'number') {
+            return {
+              valid: false,
+              corrected: { running: false, paused: false, remaining: 60, duration: 60, startTime: 0 }
+            };
+          }
+          return { valid: true, timer };
+        },
+        
         restoreLogPanelsState() {
           const logActivityPanel = document.getElementById('log-activity-panel');
           const restTimerPanelDetails = document.getElementById('rest-timer-panel-details');
@@ -2479,8 +2734,8 @@
           // Save state so it persists on refresh
           State.save();
           
-          // Update UI
-          UI.render();
+          // Only update tabs if needed
+          UI.renderTabs();
           
           // Announce for accessibility
           UI.announce(`Loaded ${exercise.name}: ${weight} kg × ${reps} reps`);
@@ -2527,7 +2782,7 @@
           }
           
           // Validate weight
-          if (isNaN(weight) || weight < 0 || weight > 9999) {
+          if (!this.validateWeight(weight)) {
             UI.showDialog({
               title: 'Invalid Weight',
               message: 'Please enter a valid weight between 0 and 9999 kg.',
@@ -2538,7 +2793,7 @@
           }
           
           // Validate reps
-          if (isNaN(reps) || reps < 1 || reps > 9999) {
+          if (!this.validateReps(reps)) {
             UI.showDialog({
               title: 'Invalid Reps',
               message: 'Please enter a valid number of reps between 1 and 9999.',
@@ -2604,9 +2859,10 @@
           const timer = State.getRestTimer();
           
           // Validate timer state before attempting to resume
-          if (!timer || typeof timer.remaining !== 'number' || typeof timer.duration !== 'number') {
+          const validation = this.validateTimerState(timer);
+          if (!validation.valid) {
             // Invalid timer state - reset to defaults
-            State.setRestTimer({ running: false, paused: false, remaining: 60, duration: 60 });
+            State.setRestTimer(validation.corrected);
             State.save();
             this.updateRestTimerDisplay();
             return;
@@ -2805,17 +3061,29 @@
         // ===================================================================================
         // LOG FORM HANDLERS
         // ===================================================================================
+        debouncedSave() {
+          // Clear existing timer
+          if (this.saveDebounceTimer) {
+            clearTimeout(this.saveDebounceTimer);
+          }
+          // Set new timer to save after 500ms of no input
+          this.saveDebounceTimer = setTimeout(() => {
+            State.save();
+            this.saveDebounceTimer = null;
+          }, 500);
+        },
+        
         handleLogFormInput(event) {
           const { name, value, id } = event.target;
           State.setLogFormField(name, value);
           
-          // Save weight and reps changes to state
+          // Debounce saves for weight and reps to avoid saving on every keystroke
           if (id === 'log-weight') {
             State.setLogFormField('weight', value);
-            State.save();
+            this.debouncedSave();
           } else if (id === 'log-reps') {
             State.setLogFormField('reps', value);
-            State.save();
+            this.debouncedSave();
           } else if (id === 'log-muscle-group') {
             // Update exercise dropdown when muscle group changes
             UI.updateExerciseSelectFromMuscleGroup();
@@ -2871,7 +3139,13 @@
           
           if (selectedExercise?.notes) {
             DOM.exerciseInfoToggle.style.display = 'inline-flex';
-            DOM.exerciseInfoPanel.innerHTML = `<strong>${selectedExercise.name}</strong>${selectedExercise.notes}`;
+            
+            DOM.exerciseInfoPanel.textContent = '';
+            const nameStrong = document.createElement('strong');
+            nameStrong.textContent = selectedExercise.name;
+            const notesText = document.createTextNode(selectedExercise.notes);
+            DOM.exerciseInfoPanel.appendChild(nameStrong);
+            DOM.exerciseInfoPanel.appendChild(notesText);
           } else {
             DOM.exerciseInfoToggle.style.display = 'none';
             DOM.exerciseInfoPanel.classList.remove('show');
@@ -2933,13 +3207,13 @@
           const reps = parseInt(DOM.logInputs.reps.value, 10);
           
           // Validate numeric values are valid and within reasonable ranges
-          if (isNaN(weight) || weight < 0 || weight > 9999) {
+          if (!this.validateWeight(weight)) {
             UI.showDialog({ title: 'Invalid Weight', message: 'Please enter a valid weight between 0 and 9999 kg.', confirmText: 'OK', showCancel: false });
             UI.announce('Invalid weight value.');
             return;
           }
           
-          if (isNaN(reps) || reps < 1 || reps > 9999) {
+          if (!this.validateReps(reps)) {
             UI.showDialog({ title: 'Invalid Reps', message: 'Please enter a valid number of reps between 1 and 9999.', confirmText: 'OK', showCancel: false });
             UI.announce('Invalid reps value.');
             return;
@@ -3011,7 +3285,9 @@
           State.save();
           DOM.addExerciseForm.reset();
           DOM.newExerciseInputs.name.focus();
-          UI.render();
+          // Only update exercise list instead of full render
+          UI.renderManageExerciseList();
+          UI.renderLogForm();  // Update dropdowns
           UI.announce(`${name} added successfully.`);
         },
         handleAddMuscleGroupFormSubmit(event) {
@@ -3172,7 +3448,10 @@
                 const exerciseName = exercise.name;
                 State.deleteExercise(exerciseId);
                 State.save();
-                UI.render();
+                // Targeted updates instead of full render
+                UI.renderManageExerciseList();
+                UI.renderLogForm();  // Update dropdowns
+                UI.updateHistoryOnly();  // Update history since items may be deleted
                 UI.announce(`${exerciseName} deleted.`);
               } else {
                 UI.announce('Deletion cancelled.');
@@ -3299,6 +3578,18 @@
             UI.showDialog({
               title: 'Import Error',
               message: 'Please upload a file or paste JSON data to import.',
+              confirmText: 'OK',
+              showCancel: false
+            });
+            return;
+          }
+          
+          // Security check: Limit import size to 10MB
+          const MAX_IMPORT_SIZE = 10 * 1024 * 1024; // 10MB
+          if (jsonText.length > MAX_IMPORT_SIZE) {
+            UI.showDialog({
+              title: 'Import Error',
+              message: `Import data is too large (${(jsonText.length / 1024 / 1024).toFixed(2)}MB). Maximum allowed is 10MB.`,
               confirmText: 'OK',
               showCancel: false
             });
