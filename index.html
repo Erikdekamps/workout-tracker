@@ -1057,12 +1057,6 @@
             <details id="exercises-panel" class="collapsible-group" open>
               <summary class="collapsible-group__summary">
                 <span>Exercises</span>
-                <button class="button button--icon" id="reset-exercises-btn" aria-label="Reset exercises to default">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-                  </svg>
-                </button>
               </summary>
               <div style="padding: 1rem;">
                 <form id="add-exercise-form" class="form" novalidate>
@@ -1083,6 +1077,14 @@
 
                 <div id="manage-exercise-list" class="collapsible-list" style="margin-top: 1rem;"></div>
                 <p id="manage-exercise-empty-state" hidden>No exercises match your filter.</p>
+                
+                <button class="button button--secondary button--full-width" id="reset-exercises-btn" style="margin-top: 1rem;" aria-label="Reset exercises to default">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 0.5rem;">
+                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+                  </svg>
+                  Reset to Default Exercises
+                </button>
               </div>
             </details>
           </div>
@@ -1092,12 +1094,6 @@
             <details id="muscle-groups-panel" class="collapsible-group">
               <summary class="collapsible-group__summary">
                 <span>Muscle Groups</span>
-                <button class="button button--icon" id="reset-muscle-groups-btn" aria-label="Reset muscle groups to default">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
-                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
-                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
-                  </svg>
-                </button>
               </summary>
               <div style="padding: 1rem;">
                 <form id="add-muscle-group-form" class="form" novalidate>
@@ -1109,6 +1105,14 @@
                 </form>
                 <div id="manage-muscle-group-list" class="collapsible-list" style="margin-top: 1rem;"></div>
                 <p id="manage-muscle-group-empty-state" hidden>All muscle groups are defaults.</p>
+                
+                <button class="button button--secondary button--full-width" id="reset-muscle-groups-btn" style="margin-top: 1rem;" aria-label="Reset muscle groups to default">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 0.5rem;">
+                    <path fill-rule="evenodd" d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+                    <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466"/>
+                  </svg>
+                  Reset to Default Muscle Groups
+                </button>
               </div>
             </details>
           </div>
