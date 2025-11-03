@@ -2085,6 +2085,9 @@
           DOM.logInputs.weight.value = weight;
           DOM.logInputs.reps.value = reps;
           
+          // Save state so it persists on refresh
+          State.save();
+          
           // Update UI
           UI.render();
           
