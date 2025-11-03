@@ -2456,7 +2456,6 @@
           
           // All exercises use weight + reps
           const newActivity = {
-            id: State.generateId('act'),
             exerciseId: exercise.id,
             timestamp: Date.now(),
             weight,
@@ -2766,7 +2765,6 @@
           
           // Export history with exercise IDs
           const historyForExport = state.history.map(item => ({
-            id: item.id,
             exerciseId: item.exerciseId,
             timestamp: item.timestamp,
             weight: item.weight,
@@ -2863,12 +2861,10 @@
                 // Import history matching by exercise name
                 state.history = [];
                 if (importedData.history && Array.isArray(importedData.history)) {
-                  let activityId = 1;
                   importedData.history.forEach(item => {
                     const exerciseId = exerciseNameToId.get(item.exerciseName);
                     if (exerciseId) {
                       state.history.push({
-                        id: `act-${activityId++}`,
                         exerciseId: exerciseId,
                         timestamp: item.timestamp,
                         weight: item.weight,
@@ -2901,7 +2897,6 @@
                     // Verify the exercise exists
                     if (State.findExercise(item.exerciseId)) {
                       state.history.push({
-                        id: item.id || State.generateId('act'),
                         exerciseId: item.exerciseId,
                         timestamp: item.timestamp,
                         weight: item.weight,
