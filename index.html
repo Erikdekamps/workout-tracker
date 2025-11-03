@@ -1232,13 +1232,13 @@
           const generateId = (prefix) => `${prefix}-${nextId++}`;
           
           const defaultExercises = [
-            { id: generateId('ex'), name: 'Ab Crunch Machine', category: 'Abs', type: 'weight_reps', notes: 'Sit in machine with chest against pad. Grip handles and crunch forward, engaging abs. Control the return.' },
-            { id: generateId('ex'), name: 'Row Deltoid', category: 'Back', type: 'weight_reps', notes: 'Sit in machine with chest against pad. Grip handles and pull back, squeezing shoulder blades together. Control the return.' },
-            { id: generateId('ex'), name: 'Barbell Curl', category: 'Biceps', type: 'weight_reps', notes: 'Stand with barbell, arms extended. Curl bar to shoulders, keeping elbows still. Lower with control.' },
-            { id: generateId('ex'), name: 'Chest Press', category: 'Chest', type: 'weight_reps', notes: 'Sit in machine, grip handles at chest level. Press forward until arms extended. Return with control.' },
-            { id: generateId('ex'), name: 'Leg Press', category: 'Legs', type: 'weight_reps', notes: 'Sit in machine, feet on platform. Push weight away by extending legs. Lower with control.' },
-            { id: generateId('ex'), name: 'Deltoid Machine', category: 'Shoulders', type: 'weight_reps', notes: 'Sit in machine, grip handles at shoulders. Press up until arms extended or raise out to sides. Lower with control.' },
-            { id: generateId('ex'), name: 'Triceps Press', category: 'Triceps', type: 'weight_reps', notes: 'Sit or stand at machine. Push handles down until arms straight. Return slowly with control.' }
+            { id: 'ab_crunch_machine', name: 'Ab Crunch Machine', category: 'Abs', type: 'weight_reps', notes: 'Sit in machine with chest against pad. Grip handles and crunch forward, engaging abs. Control the return.' },
+            { id: 'row_deltoid', name: 'Row Deltoid', category: 'Back', type: 'weight_reps', notes: 'Sit in machine with chest against pad. Grip handles and pull back, squeezing shoulder blades together. Control the return.' },
+            { id: 'barbell_curl', name: 'Barbell Curl', category: 'Biceps', type: 'weight_reps', notes: 'Stand with barbell, arms extended. Curl bar to shoulders, keeping elbows still. Lower with control.' },
+            { id: 'chest_press', name: 'Chest Press', category: 'Chest', type: 'weight_reps', notes: 'Sit in machine, grip handles at chest level. Press forward until arms extended. Return with control.' },
+            { id: 'leg_press', name: 'Leg Press', category: 'Legs', type: 'weight_reps', notes: 'Sit in machine, feet on platform. Push weight away by extending legs. Lower with control.' },
+            { id: 'deltoid_machine', name: 'Deltoid Machine', category: 'Shoulders', type: 'weight_reps', notes: 'Sit in machine, grip handles at shoulders. Press up until arms extended or raise out to sides. Lower with control.' },
+            { id: 'triceps_press', name: 'Triceps Press', category: 'Triceps', type: 'weight_reps', notes: 'Sit or stand at machine. Push handles down until arms straight. Return slowly with control.' }
           ];
           
           const initialState = JSON.parse(JSON.stringify(this._defaults));
@@ -1252,7 +1252,30 @@
         generateId(prefix) {
           return `${prefix}-${this._data._nextId++}`;
         },
-        addExercise(exercise) { this._data.exercises.push(exercise); },
+        generateSlugId(name) {
+          // Convert name to lowercase slug (e.g., "Chest Press" -> "chest_press")
+          const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
+          
+          // Check if this slug already exists
+          const existingExercise = this._data.exercises.find(ex => ex.id === baseSlug);
+          if (!existingExercise) {
+            return baseSlug;
+          }
+          
+          // If it exists, append a number
+          let counter = 2;
+          while (this._data.exercises.find(ex => ex.id === `${baseSlug}_${counter}`)) {
+            counter++;
+          }
+          return `${baseSlug}_${counter}`;
+        },
+        addExercise(exercise) { 
+          // Ensure exercise has a slug-based ID if not provided
+          if (!exercise.id || exercise.id.startsWith('ex-')) {
+            exercise.id = this.generateSlugId(exercise.name);
+          }
+          this._data.exercises.push(exercise); 
+        },
         updateExercise(id, updates) {
           const ex = this._data.exercises.find(ex => ex.id === id);
           if (ex) Object.assign(ex, updates);
@@ -1365,7 +1388,10 @@
         },
         exerciseNameExists(name, excludeId = null) {
           const lowerName = name.toLowerCase();
-          return this._data.exercises.some(ex => ex.id !== excludeId && ex.name.toLowerCase() === lowerName);
+          const slugId = this.generateSlugId(name);
+          return this._data.exercises.some(ex => 
+            ex.id !== excludeId && (ex.name.toLowerCase() === lowerName || ex.id === slugId)
+          );
         },
         getMostRecentActivity(exerciseId) {
           return this._data.history.filter(item => item.exerciseId === exerciseId).sort((a, b) => b.timestamp - a.timestamp)[0];
@@ -2480,7 +2506,7 @@
           }
           // All exercises use weight_reps type
           const newExercise = {
-            id: State.generateId('ex'),
+            id: State.generateSlugId(name),
             name,
             category: DOM.newExerciseInputs.category.value,
             type: 'weight_reps',
@@ -2726,30 +2752,30 @@
         handleExportData() {
           const state = State.get();
           
-          // Export exercises with name-based references
+          // Export exercises with their slug IDs
           const exercisesForExport = state.exercises.map(ex => ({
+            id: ex.id,
             name: ex.name,
             category: ex.category,
             type: ex.type,
             notes: ex.notes || ''
           }));
           
-          // Export history with exercise names instead of IDs
-          const historyForExport = state.history.map(item => {
-            const exercise = State.findExercise(item.exerciseId);
-            return {
-              exerciseName: exercise ? exercise.name : 'Unknown',
-              timestamp: item.timestamp,
-              weight: item.weight,
-              reps: item.reps
-            };
-          });
+          // Export history with exercise IDs
+          const historyForExport = state.history.map(item => ({
+            id: item.id,
+            exerciseId: item.exerciseId,
+            timestamp: item.timestamp,
+            weight: item.weight,
+            reps: item.reps
+          }));
           
           const dataToExport = {
             exercises: exercisesForExport,
             history: historyForExport,
             customMuscleGroups: state.customMuscleGroups || [],
-            exportDate: new Date().toISOString()
+            exportDate: new Date().toISOString(),
+            version: 2  // Version 2 uses slug-based IDs
           };
           
           const json = JSON.stringify(dataToExport, null, 2);
@@ -2801,43 +2827,86 @@
                 throw new Error('Invalid data format: missing or invalid exercises array');
               }
               
-              // Import custom muscle groups first
               const state = State.get();
+              
+              // Import custom muscle groups first
               state.customMuscleGroups = importedData.customMuscleGroups || [];
               
-              // Create a map to track exercise names to new IDs
-              const exerciseNameToId = new Map();
-              state.exercises = [];
-              state._nextId = 1;
+              // Detect import format version
+              const isLegacyFormat = importedData.version === undefined && 
+                                    importedData.history && 
+                                    importedData.history[0] && 
+                                    importedData.history[0].exerciseName !== undefined;
               
-              // Import exercises with new IDs
-              importedData.exercises.forEach(ex => {
-                const newExercise = {
-                  id: State.generateId('ex'),
-                  name: ex.name,
-                  category: ex.category,
-                  type: ex.type || 'weight_reps',
-                  notes: ex.notes || ''
-                };
-                state.exercises.push(newExercise);
-                exerciseNameToId.set(ex.name, newExercise.id);
-              });
-              
-              // Import history matching by exercise name
-              state.history = [];
-              if (importedData.history && Array.isArray(importedData.history)) {
-                importedData.history.forEach(item => {
-                  const exerciseId = exerciseNameToId.get(item.exerciseName);
-                  if (exerciseId) {
-                    state.history.push({
-                      id: State.generateId('act'),
-                      exerciseId: exerciseId,
-                      timestamp: item.timestamp,
-                      weight: item.weight,
-                      reps: item.reps
-                    });
-                  }
+              if (isLegacyFormat) {
+                // Legacy format: name-based references
+                const exerciseNameToId = new Map();
+                state.exercises = [];
+                
+                // Import exercises, generating slug-based IDs
+                importedData.exercises.forEach(ex => {
+                  const slugId = State.generateSlugId(ex.name);
+                  const newExercise = {
+                    id: slugId,
+                    name: ex.name,
+                    category: ex.category,
+                    type: ex.type || 'weight_reps',
+                    notes: ex.notes || ''
+                  };
+                  state.exercises.push(newExercise);
+                  exerciseNameToId.set(ex.name, slugId);
                 });
+                
+                // Import history matching by exercise name
+                state.history = [];
+                if (importedData.history && Array.isArray(importedData.history)) {
+                  let activityId = 1;
+                  importedData.history.forEach(item => {
+                    const exerciseId = exerciseNameToId.get(item.exerciseName);
+                    if (exerciseId) {
+                      state.history.push({
+                        id: `act-${activityId++}`,
+                        exerciseId: exerciseId,
+                        timestamp: item.timestamp,
+                        weight: item.weight,
+                        reps: item.reps
+                      });
+                    }
+                  });
+                }
+              } else {
+                // New format: ID-based references (v2+)
+                state.exercises = [];
+                
+                // Import exercises, ensuring they have proper IDs
+                importedData.exercises.forEach(ex => {
+                  const exerciseId = ex.id || State.generateSlugId(ex.name);
+                  const newExercise = {
+                    id: exerciseId,
+                    name: ex.name,
+                    category: ex.category,
+                    type: ex.type || 'weight_reps',
+                    notes: ex.notes || ''
+                  };
+                  state.exercises.push(newExercise);
+                });
+                
+                // Import history with IDs
+                state.history = [];
+                if (importedData.history && Array.isArray(importedData.history)) {
+                  importedData.history.forEach(item => {
+                    // Verify the exercise exists
+                    if (State.findExercise(item.exerciseId)) {
+                      state.history.push({
+                        id: item.id || State.generateId('act'),
+                        exerciseId: item.exerciseId,
+                        timestamp: item.timestamp,
+                        weight: item.weight,
+                        reps: item.reps
+                      });
+                    }
+                  });
+                }
               }
               
               State.save();
