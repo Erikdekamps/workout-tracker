@@ -82,28 +82,48 @@ REST TIMER MODULE:
 LOG WORKOUT:
   1. Select muscle group → handleMuscleGroupChange()
   2. Filter exercises by category → updateExerciseSelectFromMuscleGroup()
-  3. Select exercise → handleExerciseChange()
-  4. Enter weight/reps → handleWeightRepChange()
-  5. Submit form → handleLogFormSubmit()
-  6. Add to history → State.addHistoryItem()
-  7. Start rest timer → RestTimer.start()
-  8. Update UI → UI.updateHistoryOnly()
+  3. Auto-select if one exercise → State.setLogFormField(), State.save()
+  4. Select exercise → handleExerciseChange() → State.setLogFormField(), State.save()
+  5. Pre-fill weight/reps → State.getMostRecentActivity(), State.setLogFormField(), State.save()
+  6. Enter weight/reps → handleWeightRepChange() → State.setLogFormField(), debouncedSave()
+  7. Submit form → handleLogFormSubmit()
+  8. Add to history → State.addHistoryItem(), State.save()
+  9. Start rest timer → RestTimer.start() → State.setRestTimer(), State.save()
+  10. Update UI → UI.updateHistoryOnly()
 
 ADD EXERCISE:
   1. Enter name/category/notes → (form inputs)
-  2. Validate uniqueness → State.exerciseNameExists()
-  3. Generate slug ID → State.generateSlugId()
-  4. Add to state → State.addExercise()
-  5. Save to localStorage → State.save()
-  6. Update exercise lists → UI.updateManageExerciseListOnly(), UI.renderLogForm()
+  2. Submit → handleAddExerciseSubmit()
+  3. Validate uniqueness → State.exerciseNameExists()
+  4. Generate slug ID → State.generateSlugId()
+  5. Add to state → State.addExercise()
+  6. Clear editing/filter → State.setEditingExercise(null), State.setFilter('')
+  7. Save to localStorage → State.save()
+  8. Update exercise lists → UI.updateManageExerciseListOnly(), UI.renderLogForm()
 
 EDIT HISTORY:
   1. Click edit button → handleHistoryAction()
-  2. Show inline edit form → UI._createHistoryEditView()
-  3. Modify values → (form inputs)
-  4. Save changes → handleHistorySave()
-  5. Update history display → State.updateHistoryItem()
-  6. Preserve scroll position → UI.updateHistoryOnly()
+  2. Set editing mode → State.setEditingHistory(), State.save()
+  3. Show inline edit form → UI._createHistoryEditView()
+  4. Modify values → (form inputs)
+  5. Save changes → handleHistorySave()
+  6. Update history item → State.updateHistoryItem()
+  7. Clear editing mode → State.setEditingHistory(null)
+  8. Save to localStorage → State.save()
+  9. Update UI → UI.updateHistoryOnly() (preserves scroll)
+
+COLLAPSE PANELS:
+  1. Toggle panel → panel.addEventListener('toggle')
+  2. Update state → State.setPanelCollapsed() or State.setLogPanelCollapsed()
+  3. Save to localStorage → State.save()
+  4. State persists across sessions
+
+FILTER EXERCISES:
+  1. Type in filter input → handleSettingsFilterInput()
+  2. Update filter → State.setFilter()
+  3. Clear editing mode → State.setEditingExercise(null)
+  4. Save to localStorage → State.save()
+  5. Update list → UI.updateManageExerciseListOnly()
 
 IMPORT DATA:
   1. Upload JSON file → handleImportData()
@@ -1820,6 +1840,7 @@ IMPORT DATA:
           if (filteredExercises.length === 1) {
             DOM.logExerciseSelect.value = filteredExercises[0].id;
             State.setLogFormField('exerciseId', filteredExercises[0].id);
+            State.save();
             this.updateLogFormVisibility();
           }
         },
@@ -2665,6 +2686,7 @@ IMPORT DATA:
           DOM.logInputs.reps.value = '';
           State.setLogFormField('weight', '');
           State.setLogFormField('reps', '');
+          State.save();
         },
         
         adjustValue(inputElement, delta, min, max, isInteger = false) {
@@ -3462,6 +3484,7 @@ IMPORT DATA:
         handleSettingsFilterInput(event) {
           State.setFilter(event.target.value);
           State.setEditingExercise(null);
+          State.save();
           UI.updateManageExerciseListOnly();
         },
         
