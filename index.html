@@ -448,13 +448,35 @@
       background-color: var(--color-surface);
       padding: 1rem;
       border: 1px solid var(--color-border);
-      gap: 0.5rem 1rem;
-      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    
+    .history-list__item--editing {
+      display: block;
+      padding: 1rem;
     }
 
     .history-list__details {
       display: flex;
       flex-direction: column;
+      flex: 1;
+      min-width: 0;
+    }
+    
+    .history-list__actions {
+      display: flex;
+      gap: 0.25rem;
+      flex-shrink: 0;
+    }
+    
+    .history-list__edit-form {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    
+    .history-list__edit-form .form-group {
+      margin-bottom: 0;
     }
 
     .history-list__exercise {
@@ -1180,12 +1202,12 @@
         _defaults: {
           activeTab: 'log', exercises: [], history: [],
           logForm: { exerciseId: '', weight: '', reps: '' },
-          settings: { filter: '', editingExerciseId: null, editingMuscleGroup: null, autoStartTimer: true },
+          settings: { filter: '', editingExerciseId: null, editingMuscleGroup: null, editingHistoryTimestamp: null, autoStartTimer: true },
           restTimer: { running: false, paused: false, startTime: 0, remaining: 60, duration: 60 },
-          restTimerCollapsed: true,
           customMuscleGroups: [],
           settingsPanelsCollapsed: { exercises: false, muscleGroups: true, exportImport: true },
-          logPanelsCollapsed: { logActivity: false, restTimer: true, history: false }
+          logPanelsCollapsed: { logActivity: false, restTimer: true, history: false },
+          historyDatesOpen: []
         },
         _constants: {
           STORAGE_KEY: 'workoutTrackerState_v5',
@@ -1210,27 +1232,37 @@
           if (!stored) return this._getInitialState();
           
           const parsed = JSON.parse(stored);
-          const allIds = [...(parsed.exercises || []), ...(parsed.history || [])]
-            .map(item => parseInt(item.id.split('-')[1]))
-            .filter(Boolean);
-          const nextId = allIds.length ? Math.max(...allIds) + 1 : 1;
           
-          return { ...this._getInitialState(nextId), ...parsed };
+          // We no longer use numeric IDs, so we don't need to calculate nextId
+          const initialState = this._getInitialState();
+          const loadedState = { ...initialState, ...parsed };
+          
+          // Ensure historyDatesOpen is initialized
+          if (!loadedState.historyDatesOpen) {
+            loadedState.historyDatesOpen = [];
+          }
+          
+          return loadedState;
         },
 
         save() {
-          const { exercises, history, activeTab, logForm, settings, restTimer, restTimerCollapsed, customMuscleGroups, settingsPanelsCollapsed, logPanelsCollapsed } = this._data;
+          const { exercises, history, activeTab, logForm, settings, restTimer, restTimerCollapsed, customMuscleGroups, settingsPanelsCollapsed, logPanelsCollapsed, historyDatesOpen } = this._data;
           localStorage.setItem(this._constants.STORAGE_KEY, JSON.stringify({
-            exercises, history, activeTab, restTimer, restTimerCollapsed, customMuscleGroups, settingsPanelsCollapsed, logPanelsCollapsed,
+            exercises, 
+            history, 
+            activeTab, 
+            restTimer, 
+            restTimerCollapsed, 
+            customMuscleGroups, 
+            settingsPanelsCollapsed, 
+            logPanelsCollapsed, 
+            historyDatesOpen: historyDatesOpen || [],
             logForm: { exerciseId: logForm.exerciseId, weight: logForm.weight, reps: logForm.reps },
             settings: { autoStartTimer: settings.autoStartTimer }
           }));
         },
 
-        _getInitialState(startId = 1) {
-          let nextId = startId;
-          const generateId = (prefix) => `${prefix}-${nextId++}`;
-          
+        _getInitialState() {
           const defaultExercises = [
             { id: 'ab_crunch_machine', name: 'Ab Crunch Machine', category: 'Abs', type: 'weight_reps', notes: 'Sit in machine with chest against pad. Grip handles and crunch forward, engaging abs. Control the return.' },
             { id: 'row_deltoid', name: 'Row Deltoid', category: 'Back', type: 'weight_reps', notes: 'Sit in machine with chest against pad. Grip handles and pull back, squeezing shoulder blades together. Control the return.' },
@@ -1243,15 +1275,11 @@
           
           const initialState = JSON.parse(JSON.stringify(this._defaults));
           initialState.exercises = defaultExercises;
-          initialState._nextId = nextId;
           return initialState;
         },
 
         get() { return this._data; },
         getConstants() { return this._constants; },
-        generateId(prefix) {
-          return `${prefix}-${this._data._nextId++}`;
-        },
         generateSlugId(name) {
           // Convert name to lowercase slug (e.g., "Chest Press" -> "chest_press")
           const baseSlug = name.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '');
@@ -1285,11 +1313,19 @@
           this._data.history = this._data.history.filter(h => h.exerciseId !== id);
         },
         addHistoryItem(item) { this._data.history.push(item); },
+        updateHistoryItem(timestamp, updates) {
+          const item = this._data.history.find(h => h.timestamp === timestamp);
+          if (item) Object.assign(item, updates);
+        },
+        deleteHistoryItem(timestamp) {
+          this._data.history = this._data.history.filter(h => h.timestamp !== timestamp);
+        },
         setActiveTab(tabId) { this._data.activeTab = tabId; },
         setLogFormField(field, value) { this._data.logForm[field] = value; },
         setFilter(query) { this._data.settings.filter = query; },
         setEditingExercise(id) { this._data.settings.editingExerciseId = id; },
         setEditingMuscleGroup(name) { this._data.settings.editingMuscleGroup = name; },
+        setEditingHistory(timestamp) { this._data.settings.editingHistoryTimestamp = timestamp; },
         setRestTimer(data) { Object.assign(this._data.restTimer, data); },
         getRestTimer() { return this._data.restTimer; },
         setRestTimerCollapsed(collapsed) { this._data.restTimerCollapsed = collapsed; },
@@ -1313,6 +1349,13 @@
         getLogPanelCollapsed(panelName) {
           if (!this._data.logPanelsCollapsed) return panelName === 'restTimer';
           return this._data.logPanelsCollapsed[panelName];
+        },
+        
+        getHistoryDatesOpen() {
+          return this._data.historyDatesOpen || [];
+        },
+        setHistoryDatesOpen(dates) {
+          this._data.historyDatesOpen = dates;
         },
         
         // Muscle group management
@@ -1572,6 +1615,18 @@
             DOM.historyTitle.textContent = 'History';
           }
 
+          // Preserve open state of date sections before re-rendering
+          const openDates = [];
+          DOM.historyList.querySelectorAll('details[open]').forEach(details => {
+            const summaryText = details.querySelector('summary span')?.textContent;
+            if (summaryText) {
+              openDates.push(summaryText);
+            }
+          });
+          
+          // Use preserved state if available (during re-render), otherwise use saved state from localStorage
+          const savedDates = openDates.length > 0 ? openDates : State.getHistoryDatesOpen();
+
           DOM.historyList.innerHTML = '';
           const sortedHistory = [...historyToRender].sort((a, b) => b.timestamp - a.timestamp);
           
@@ -1590,16 +1645,23 @@
           DOM.historyList.hidden = false;
           
           const activitiesByDate = this.groupActivitiesByDate(sortedHistory);
+          const dateDetailsElements = [];
+          
           Object.keys(activitiesByDate).sort((a, b) => new Date(b) - new Date(a)).forEach((dateString, index) => {
             const activities = activitiesByDate[dateString];
             const details = document.createElement('details');
-            if (index === 0) details.open = true;
+            const activityCount = activities.length;
+            const summaryTextContent = `${new Date(dateString).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} (${activityCount} activit${activityCount > 1 ? 'ies' : 'y'})`;
+            
+            // Restore previous open state, or open first date by default if nothing was previously open
+            if (savedDates.length > 0 ? savedDates.includes(summaryTextContent) : index === 0) {
+              details.open = true;
+            }
             
             const summary = document.createElement('summary');
             summary.className = 'collapsible-group__summary';
-            const activityCount = activities.length;
             const summaryText = document.createElement('span');
-            summaryText.textContent = `${new Date(dateString).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })} (${activityCount} activit${activityCount > 1 ? 'ies' : 'y'})`;
+            summaryText.textContent = summaryTextContent;
             summary.appendChild(summaryText);
             
             const innerList = document.createElement('ul');
@@ -1609,22 +1671,45 @@
               const exercise = State.findExercise(item.exerciseId);
               if (!exercise) return;
               
-              const metaText = `${item.weight} kg × ${item.reps} reps`;
-              const timeString = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+              const { settings } = State.get();
+              const isEditing = settings.editingHistoryTimestamp === item.timestamp;
               
               const li = document.createElement('li');
-              li.className = 'history-list__item';
-              li.style.cursor = 'pointer';
+              li.className = isEditing ? 'history-list__item history-list__item--editing' : 'history-list__item';
               li.setAttribute('data-exercise-id', item.exerciseId);
+              li.setAttribute('data-timestamp', item.timestamp);
               li.setAttribute('data-weight', item.weight);
               li.setAttribute('data-reps', item.reps);
-              li.innerHTML = `<div class="history-list__details"><span class="history-list__exercise">${exercise.name}</span><span class="history-list__meta">${metaText}</span></div><span class="history-list__time">${timeString}</span>`;
+              
+              if (isEditing) {
+                li.appendChild(this._createHistoryEditView(item, exercise));
+              } else {
+                li.appendChild(this._createHistoryDisplayView(item, exercise));
+              }
+              
               innerList.appendChild(li);
             });
             
             details.append(summary, innerList);
             DOM.historyList.appendChild(details);
+            dateDetailsElements.push(details);
           });
+          
+          // Add toggle event listeners after all elements are rendered
+          // This prevents the initial open state from triggering a save
+          setTimeout(() => {
+            dateDetailsElements.forEach(details => {
+              details.addEventListener('toggle', () => {
+                const currentlyOpen = [];
+                DOM.historyList.querySelectorAll('details[open]').forEach(d => {
+                  const text = d.querySelector('summary span')?.textContent;
+                  if (text) currentlyOpen.push(text);
+                });
+                State.setHistoryDatesOpen(currentlyOpen);
+                State.save();
+              });
+            });
+          }, 0);
         },
         renderManageExerciseList() {
           const { settings } = State.get();
@@ -1781,7 +1866,22 @@
         // Targeted update methods to avoid full re-renders
         updateHistoryOnly() {
           DOM.historyContainer.setAttribute('aria-busy', 'true');
+          
+          // Preserve scroll position
+          const scrollParent = DOM.historyContainer.closest('.panel') || window;
+          const scrollTop = scrollParent === window ? window.scrollY : scrollParent.scrollTop;
+          
           this.renderHistory();
+          
+          // Restore scroll position
+          requestAnimationFrame(() => {
+            if (scrollParent === window) {
+              window.scrollTo(0, scrollTop);
+            } else {
+              scrollParent.scrollTop = scrollTop;
+            }
+          });
+          
           DOM.historyContainer.setAttribute('aria-busy', 'false');
         },
         
@@ -1791,6 +1891,270 @@
         
         updateManageMuscleGroupListOnly() {
           this.renderManageMuscleGroupList();
+        },
+        
+        _createHistoryDisplayView(item, exercise) {
+          const metaText = `${item.weight} kg × ${item.reps} reps`;
+          const timeString = new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          
+          const fragment = document.createDocumentFragment();
+          
+          const detailsDiv = document.createElement('div');
+          detailsDiv.className = 'history-list__details';
+          detailsDiv.style.cursor = 'pointer';
+          detailsDiv.innerHTML = `<span class="history-list__exercise">${exercise.name}</span><span class="history-list__meta">${metaText}</span>`;
+          
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'history-list__actions';
+          actionsDiv.style.display = 'flex';
+          actionsDiv.style.gap = '0.25rem';
+          
+          const editBtn = document.createElement('button');
+          editBtn.className = 'button button--icon';
+          editBtn.type = 'button';
+          editBtn.setAttribute('data-action', 'edit-history');
+          editBtn.setAttribute('aria-label', `Edit ${exercise.name} entry`);
+          editBtn.innerHTML = `<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207zM1.586 11.5 3.207 10 9.707 3.5h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l-6.5 6.5zm-1.25 2.5.106-.106 3.821-1.528-1.528 3.821-.106.106a.5.5 0 0 1-.468-.325z"/></svg>`;
+          
+          const deleteBtn = document.createElement('button');
+          deleteBtn.className = 'button button--icon button--danger-hover';
+          deleteBtn.type = 'button';
+          deleteBtn.setAttribute('data-action', 'delete-history');
+          deleteBtn.setAttribute('aria-label', `Delete ${exercise.name} entry`);
+          deleteBtn.innerHTML = `<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0zM14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3V2h11v1z"/></svg>`;
+          
+          actionsDiv.append(editBtn, deleteBtn);
+          
+          const timeSpan = document.createElement('span');
+          timeSpan.className = 'history-list__time';
+          timeSpan.textContent = timeString;
+          
+          fragment.append(detailsDiv, actionsDiv, timeSpan);
+          return fragment;
+        },
+        
+        _createHistoryEditView(item, exercise) {
+          const container = document.createElement('div');
+          container.className = 'history-list__edit-form';
+          
+          const allGroups = State.getAllMuscleGroups();
+          
+          // Muscle Group Select
+          const muscleGroupDiv = document.createElement('div');
+          muscleGroupDiv.className = 'form-group form-group--full-width';
+          
+          const muscleGroupLabel = document.createElement('label');
+          muscleGroupLabel.className = 'form-group__label';
+          muscleGroupLabel.textContent = 'Muscle Group';
+          muscleGroupLabel.setAttribute('for', 'edit-muscle-group');
+          
+          const muscleGroupSelect = document.createElement('select');
+          muscleGroupSelect.id = 'edit-muscle-group';
+          muscleGroupSelect.className = 'input';
+          muscleGroupSelect.setAttribute('data-field', 'muscleGroup');
+          muscleGroupSelect.required = true;
+          
+          allGroups.forEach(groupName => {
+            const option = document.createElement('option');
+            option.value = groupName;
+            option.textContent = groupName;
+            if (groupName === exercise.category) {
+              option.selected = true;
+            }
+            muscleGroupSelect.appendChild(option);
+          });
+          
+          muscleGroupDiv.append(muscleGroupLabel, muscleGroupSelect);
+          
+          // Exercise Select
+          const exerciseDiv = document.createElement('div');
+          exerciseDiv.className = 'form-group form-group--full-width';
+          
+          const exerciseLabel = document.createElement('label');
+          exerciseLabel.className = 'form-group__label';
+          exerciseLabel.textContent = 'Exercise';
+          exerciseLabel.setAttribute('for', 'edit-exercise');
+          
+          const exerciseSelect = document.createElement('select');
+          exerciseSelect.id = 'edit-exercise';
+          exerciseSelect.className = 'input';
+          exerciseSelect.setAttribute('data-field', 'exerciseId');
+          exerciseSelect.required = true;
+          
+          // Populate exercises for current muscle group
+          const updateExerciseOptions = (selectedGroup) => {
+            exerciseSelect.innerHTML = '';
+            const exercises = State.getExercisesByCategory(selectedGroup);
+            
+            if (exercises.length === 0) {
+              const option = document.createElement('option');
+              option.value = '';
+              option.textContent = `No exercises for ${selectedGroup}`;
+              exerciseSelect.appendChild(option);
+            } else {
+              exercises.forEach(ex => {
+                const option = document.createElement('option');
+                option.value = ex.id;
+                option.textContent = ex.name;
+                if (ex.id === item.exerciseId) {
+                  option.selected = true;
+                }
+                exerciseSelect.appendChild(option);
+              });
+            }
+          };
+          
+          updateExerciseOptions(exercise.category);
+          
+          // Update exercise options when muscle group changes
+          muscleGroupSelect.addEventListener('change', () => {
+            updateExerciseOptions(muscleGroupSelect.value);
+          });
+          
+          exerciseDiv.append(exerciseLabel, exerciseSelect);
+          
+          // Weight Input with +/- buttons
+          const weightDiv = document.createElement('div');
+          weightDiv.className = 'form-group form-group--full-width';
+          
+          const weightLabel = document.createElement('label');
+          weightLabel.className = 'form-group__label';
+          weightLabel.textContent = 'Weight (kg)';
+          weightLabel.setAttribute('for', 'edit-weight');
+          
+          const weightControlsDiv = document.createElement('div');
+          weightControlsDiv.style.display = 'flex';
+          weightControlsDiv.style.alignItems = 'center';
+          weightControlsDiv.style.gap = '0.5rem';
+          
+          const weightDecBtn = document.createElement('button');
+          weightDecBtn.type = 'button';
+          weightDecBtn.className = 'button button--secondary';
+          weightDecBtn.style.cssText = 'width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;';
+          weightDecBtn.setAttribute('aria-label', 'Decrease weight by 2.5 kg');
+          weightDecBtn.textContent = '−';
+          
+          const weightInput = document.createElement('input');
+          weightInput.type = 'number';
+          weightInput.id = 'edit-weight';
+          weightInput.className = 'input';
+          weightInput.setAttribute('data-field', 'weight');
+          weightInput.value = item.weight;
+          weightInput.min = '0';
+          weightInput.max = '9999';
+          weightInput.step = '0.5';
+          weightInput.pattern = '[0-9]*';
+          weightInput.inputMode = 'numeric';
+          weightInput.style.flex = '1';
+          weightInput.style.textAlign = 'center';
+          weightInput.required = true;
+          
+          const weightIncBtn = document.createElement('button');
+          weightIncBtn.type = 'button';
+          weightIncBtn.className = 'button button--secondary';
+          weightIncBtn.style.cssText = 'width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;';
+          weightIncBtn.setAttribute('aria-label', 'Increase weight by 2.5 kg');
+          weightIncBtn.textContent = '+';
+          
+          // Weight button handlers
+          weightDecBtn.addEventListener('click', () => {
+            const currentValue = parseFloat(weightInput.value) || 0;
+            const newValue = Math.max(0, Math.min(9999, currentValue - 2.5));
+            weightInput.value = newValue;
+          });
+          
+          weightIncBtn.addEventListener('click', () => {
+            const currentValue = parseFloat(weightInput.value) || 0;
+            const newValue = Math.max(0, Math.min(9999, currentValue + 2.5));
+            weightInput.value = newValue;
+          });
+          
+          weightControlsDiv.append(weightDecBtn, weightInput, weightIncBtn);
+          weightDiv.append(weightLabel, weightControlsDiv);
+          
+          // Reps Input with +/- buttons
+          const repsDiv = document.createElement('div');
+          repsDiv.className = 'form-group form-group--full-width';
+          
+          const repsLabel = document.createElement('label');
+          repsLabel.className = 'form-group__label';
+          repsLabel.textContent = 'Reps';
+          repsLabel.setAttribute('for', 'edit-reps');
+          
+          const repsControlsDiv = document.createElement('div');
+          repsControlsDiv.style.display = 'flex';
+          repsControlsDiv.style.alignItems = 'center';
+          repsControlsDiv.style.gap = '0.5rem';
+          
+          const repsDecBtn = document.createElement('button');
+          repsDecBtn.type = 'button';
+          repsDecBtn.className = 'button button--secondary';
+          repsDecBtn.style.cssText = 'width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;';
+          repsDecBtn.setAttribute('aria-label', 'Decrease reps by 1');
+          repsDecBtn.textContent = '−';
+          
+          const repsInput = document.createElement('input');
+          repsInput.type = 'number';
+          repsInput.id = 'edit-reps';
+          repsInput.className = 'input';
+          repsInput.setAttribute('data-field', 'reps');
+          repsInput.value = item.reps;
+          repsInput.min = '1';
+          repsInput.max = '9999';
+          repsInput.step = '1';
+          repsInput.pattern = '[0-9]*';
+          repsInput.inputMode = 'numeric';
+          repsInput.style.flex = '1';
+          repsInput.style.textAlign = 'center';
+          repsInput.required = true;
+          
+          const repsIncBtn = document.createElement('button');
+          repsIncBtn.type = 'button';
+          repsIncBtn.className = 'button button--secondary';
+          repsIncBtn.style.cssText = 'width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 700; flex-shrink: 0;';
+          repsIncBtn.setAttribute('aria-label', 'Increase reps by 1');
+          repsIncBtn.textContent = '+';
+          
+          // Reps button handlers
+          repsDecBtn.addEventListener('click', () => {
+            const currentValue = parseInt(repsInput.value) || 0;
+            const newValue = Math.max(1, Math.min(9999, currentValue - 1));
+            repsInput.value = Math.floor(newValue);
+          });
+          
+          repsIncBtn.addEventListener('click', () => {
+            const currentValue = parseInt(repsInput.value) || 0;
+            const newValue = Math.max(1, Math.min(9999, currentValue + 1));
+            repsInput.value = Math.floor(newValue);
+          });
+          
+          repsControlsDiv.append(repsDecBtn, repsInput, repsIncBtn);
+          repsDiv.append(repsLabel, repsControlsDiv);
+          
+          // Action Buttons
+          const actionsDiv = document.createElement('div');
+          actionsDiv.className = 'form-group form-group--full-width';
+          actionsDiv.style.display = 'flex';
+          actionsDiv.style.gap = '0.5rem';
+          
+          const saveBtn = document.createElement('button');
+          saveBtn.className = 'button button--primary';
+          saveBtn.type = 'button';
+          saveBtn.style.flex = '1';
+          saveBtn.setAttribute('data-action', 'save-history');
+          saveBtn.textContent = 'Save';
+          
+          const cancelBtn = document.createElement('button');
+          cancelBtn.className = 'button button--secondary';
+          cancelBtn.type = 'button';
+          cancelBtn.style.flex = '1';
+          cancelBtn.setAttribute('data-action', 'cancel-edit-history');
+          cancelBtn.textContent = 'Cancel';
+          
+          actionsDiv.append(saveBtn, cancelBtn);
+          
+          container.append(muscleGroupDiv, exerciseDiv, weightDiv, repsDiv, actionsDiv);
+          return container;
         },
         
         renderManageMuscleGroupList() {
@@ -2054,6 +2418,29 @@
         // TAB NAVIGATION
         // ===================================================================================
         handleHistoryItemClick(event) {
+          // Check if clicking on action buttons
+          const action = event.target.closest('[data-action]');
+          if (action) {
+            event.stopPropagation();
+            const actionType = action.getAttribute('data-action');
+            const historyItem = event.target.closest('.history-list__item');
+            
+            if (actionType === 'edit-history') {
+              this.handleEditHistoryItem(historyItem);
+            } else if (actionType === 'delete-history') {
+              this.handleDeleteHistoryItem(historyItem);
+            } else if (actionType === 'save-history') {
+              this.handleSaveHistoryItem(historyItem);
+            } else if (actionType === 'cancel-edit-history') {
+              this.handleCancelEditHistory();
+            }
+            return;
+          }
+          
+          // Only trigger load on clicking the details area
+          const detailsDiv = event.target.closest('.history-list__details');
+          if (!detailsDiv) return;
+          
           const historyItem = event.target.closest('.history-list__item');
           if (!historyItem) return;
           
@@ -2094,6 +2481,106 @@
           // Announce for accessibility
           UI.announce(`Loaded ${exercise.name}: ${weight} kg × ${reps} reps`);
         },
+        
+        handleEditHistoryItem(historyItem) {
+          const timestamp = parseInt(historyItem.getAttribute('data-timestamp'));
+          State.setEditingHistory(timestamp);
+          State.save();
+          UI.updateHistoryOnly();
+        },
+        
+        handleSaveHistoryItem(historyItem) {
+          const timestamp = parseInt(historyItem.getAttribute('data-timestamp'));
+          
+          const exerciseIdInput = historyItem.querySelector('[data-field="exerciseId"]');
+          const weightInput = historyItem.querySelector('[data-field="weight"]');
+          const repsInput = historyItem.querySelector('[data-field="reps"]');
+          
+          const exerciseId = exerciseIdInput.value;
+          const weight = parseFloat(weightInput.value);
+          const reps = parseInt(repsInput.value, 10);
+          
+          // Validate exercise
+          if (!exerciseId) {
+            UI.showDialog({
+              title: 'No Exercise Selected',
+              message: 'Please select an exercise.',
+              confirmText: 'OK',
+              showCancel: false
+            });
+            return;
+          }
+          
+          const exercise = State.findExercise(exerciseId);
+          if (!exercise) {
+            UI.showDialog({
+              title: 'Invalid Exercise',
+              message: 'The selected exercise does not exist.',
+              confirmText: 'OK',
+              showCancel: false
+            });
+            return;
+          }
+          
+          // Validate weight
+          if (isNaN(weight) || weight < 0 || weight > 9999) {
+            UI.showDialog({
+              title: 'Invalid Weight',
+              message: 'Please enter a valid weight between 0 and 9999 kg.',
+              confirmText: 'OK',
+              showCancel: false
+            });
+            return;
+          }
+          
+          // Validate reps
+          if (isNaN(reps) || reps < 1 || reps > 9999) {
+            UI.showDialog({
+              title: 'Invalid Reps',
+              message: 'Please enter a valid number of reps between 1 and 9999.',
+              confirmText: 'OK',
+              showCancel: false
+            });
+            return;
+          }
+          
+          State.updateHistoryItem(timestamp, { exerciseId, weight, reps });
+          State.setEditingHistory(null);
+          State.save();
+          UI.updateHistoryOnly();
+          
+          UI.announce(`Updated to ${exercise.name}: ${weight} kg × ${reps} reps`);
+        },
+        
+        handleCancelEditHistory() {
+          State.setEditingHistory(null);
+          State.save();
+          UI.updateHistoryOnly();
+        },
+        
+        async handleDeleteHistoryItem(historyItem) {
+          const timestamp = parseInt(historyItem.getAttribute('data-timestamp'));
+          const exerciseId = historyItem.getAttribute('data-exercise-id');
+          const weight = historyItem.getAttribute('data-weight');
+          const reps = historyItem.getAttribute('data-reps');
+          
+          const exercise = State.findExercise(exerciseId);
+          if (!exercise) return;
+          
+          const confirmed = await UI.showDialog({
+            title: 'Delete Activity?',
+            message: `Delete ${exercise.name}: ${weight} kg × ${reps} reps?`,
+            confirmText: 'Delete'
+          });
+          
+          if (confirmed) {
+            State.deleteHistoryItem(timestamp);
+            State.save();
+            UI.updateHistoryOnly();
+            UI.announce(`Deleted ${exercise.name} entry`);
+          }
+        },
+        
         handleTabClick(event) {
           const tab = event.target.closest('[role="tab"]');
           if (tab) {
@@ -2905,6 +3392,26 @@
                     }
                   });
                 }
+              }
+              
+              // Ensure all other state fields are properly initialized
+              if (!state.historyDatesOpen) {
+                state.historyDatesOpen = [];
+              }
+              if (!state.settingsPanelsCollapsed) {
+                state.settingsPanelsCollapsed = { exercises: false, muscleGroups: true, exportImport: true };
+              }
+              if (!state.logPanelsCollapsed) {
+                state.logPanelsCollapsed = { logActivity: false, restTimer: true, history: false };
+              }
+              if (!state.restTimer) {
+                state.restTimer = { running: false, paused: false, startTime: 0, remaining: 60, duration: 60 };
+              }
+              if (!state.logForm) {
+                state.logForm = { exerciseId: '', weight: '', reps: '' };
+              }
+              if (!state.settings) {
+                state.settings = { filter: '', editingExerciseId: null, editingMuscleGroup: null, editingHistoryTimestamp: null, autoStartTimer: true };
               }
               
               State.save();
